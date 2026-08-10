@@ -1933,5 +1933,23 @@
     "statusNone": "No credential",
     "empty": "No clients match this filter.",
     "noName": "Unnamed contact"
+  },
+  "Search": {
+    "title": "Search",
+    "triggerAria": "Search",
+    "placeholder": "Search contacts, conversations, payments…",
+    "resultsAria": "Search results",
+    "loading": "Searching…",
+    "emptyHint": "Search across contacts, conversations, payments, credentials and renewals.",
+    "empty": "No results for “{query}”.",
+    "kbdHint": "↑/↓ to navigate · Enter to open · Esc to close",
+    "unnamedContact": "Unnamed contact",
+    "groups": {
+      "contact": "Contacts",
+      "conversation": "Conversations",
+      "payment": "Payments",
+      "credential": "Credentials",
+      "renewal": "Renewals"
+    }
   }
 }

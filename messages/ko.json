@@ -1932,5 +1932,23 @@
     "statusNone": "자격 증명 없음",
     "empty": "이 필터에 해당하는 클라이언트가 없습니다.",
     "noName": "이름 없는 연락처"
+  },
+  "Search": {
+    "title": "검색",
+    "triggerAria": "검색",
+    "placeholder": "연락처, 대화, 결제 검색…",
+    "resultsAria": "검색 결과",
+    "loading": "검색 중…",
+    "emptyHint": "연락처, 대화, 결제, 자격 증명, 갱신 내역을 검색하세요.",
+    "empty": "“{query}”에 대한 결과가 없습니다.",
+    "kbdHint": "↑/↓ 이동 · Enter 열기 · Esc 닫기",
+    "unnamedContact": "이름 없는 연락처",
+    "groups": {
+      "contact": "연락처",
+      "conversation": "대화",
+      "payment": "결제",
+      "credential": "자격 증명",
+      "renewal": "갱신"
+    }
   }
 }

@@ -1993,5 +1993,23 @@
       "daysAgo": "{count, plural, =1 {1 dia atrás} other {# dias atrás}}",
       "longAgo": "há muito tempo"
     }
+  },
+  "Search": {
+    "title": "Pesquisar",
+    "triggerAria": "Pesquisar",
+    "placeholder": "Pesquise contatos, conversas, pagamentos…",
+    "resultsAria": "Resultados da pesquisa",
+    "loading": "Pesquisando…",
+    "emptyHint": "Pesquise contatos, conversas, pagamentos, credenciais e renovações.",
+    "empty": "Nenhum resultado para “{query}”.",
+    "kbdHint": "↑/↓ para navegar · Enter para abrir · Esc para fechar",
+    "unnamedContact": "Contato sem nome",
+    "groups": {
+      "contact": "Contatos",
+      "conversation": "Conversas",
+      "payment": "Pagamentos",
+      "credential": "Credenciais",
+      "renewal": "Renovações"
+    }
   }
 }
