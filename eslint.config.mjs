@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Vendored minified opus-recorder encoder worker (served statically).
     "public/opus/**",
+    // Generated Baileys worker bundle (esbuild output from `npm run wa`).
+    ".wa/**",
   ]),
 ]);
 

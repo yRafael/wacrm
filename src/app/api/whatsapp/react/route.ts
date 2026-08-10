@@ -1,22 +1,27 @@
 import { NextResponse } from 'next/server';
+
 import { createClient } from '@/lib/supabase/server';
-import { sendReactionMessage } from '@/lib/whatsapp/meta-api';
-import { decrypt } from '@/lib/whatsapp/encryption';
+import { resolveAccountId } from '@/lib/whatsapp/sessions';
 import { sanitizePhoneForMeta } from '@/lib/whatsapp/phone-utils';
-import {
-  checkRateLimit,
-  rateLimitResponse,
-  RATE_LIMITS,
-} from '@/lib/rate-limit';
+import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit';
 
 /**
  * POST /api/whatsapp/react
  *
  * Body: { message_id: <internal UUID>, emoji: <single emoji or "" to remove> }
  *
- * Sends the reaction to Meta and mirrors it into `message_reactions`
- * (delete on empty emoji). Customer-side reactions are handled by the
- * webhook — this route only writes `actor_type = 'agent'` rows.
+ * Agent reactions are queued on `whatsapp_outbox` as a `reaction` row for
+ * the Baileys worker: the worker sends it over the socket as a `react`
+ * message (payload.messageId = transport-side target id, payload.emoji =
+ * react.text) and marks the row `sent`. Reactions are state, not messages,
+ * so the worker never writes a `messages` row for them.
+ *
+ * The DB mirror into `message_reactions` (actor_type = 'agent') is written
+ * here so the thread stays in sync over Realtime. It's optimistic — the
+ * worker doesn't persist agent reactions — so if the worker later fails to
+ * deliver (e.g. session dropped), the outbox row lands on `failed` and the
+ * stale reaction should be reconciled manually. That's an acceptable
+ * trade-off in a manual-ops workspace, where failed sends are rare.
  */
 export async function POST(request: Request) {
   try {
@@ -36,14 +41,7 @@ export async function POST(request: Request) {
       return rateLimitResponse(limit);
     }
 
-    // Resolve the caller's account_id so conversation + whatsapp_config
-    // lookups work for teammates who didn't author the rows directly.
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('account_id')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    const accountId = profile?.account_id as string | undefined;
+    const accountId = await resolveAccountId(supabase, user.id);
     if (!accountId) {
       return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
@@ -51,20 +49,17 @@ export async function POST(request: Request) {
       );
     }
 
-    const body = await request.json();
-    const { message_id, emoji } = body as {
-      message_id?: string;
-      emoji?: string;
-    };
+    const body = (await request.json()) as { message_id?: string; emoji?: string };
+    const { message_id, emoji } = body;
 
-    if (!message_id || typeof emoji !== 'string') {
+    if (typeof message_id !== 'string' || typeof emoji !== 'string') {
       return NextResponse.json(
         { error: 'message_id and emoji are required' },
         { status: 400 },
       );
     }
 
-    // Resolve target message + its conversation; verify ownership.
+    // Resolve target message within this account's conversations.
     const { data: targetMessage, error: msgError } = await supabase
       .from('messages')
       .select('id, message_id, conversation_id')
@@ -76,8 +71,8 @@ export async function POST(request: Request) {
     }
 
     if (!targetMessage.message_id) {
-      // No Meta ID yet — usually a sending/failed agent message. We can't
-      // tell Meta to react to a message it never received.
+      // No transport-side id yet (usually a still-sending/failed agent
+      // message) — WhatsApp can't react to something never delivered.
       return NextResponse.json(
         { error: 'Cannot react to a message that has not been sent to WhatsApp' },
         { status: 400 },
@@ -86,16 +81,13 @@ export async function POST(request: Request) {
 
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
-      .select('id, account_id, contact:contacts(phone)')
+      .select('id, contact:contacts(phone)')
       .eq('id', targetMessage.conversation_id)
       .eq('account_id', accountId)
       .maybeSingle();
 
     if (convError || !conversation) {
-      return NextResponse.json(
-        { error: 'Conversation not found' },
-        { status: 404 },
-      );
+      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
     }
 
     const contact = Array.isArray(conversation.contact)
@@ -108,42 +100,28 @@ export async function POST(request: Request) {
       );
     }
 
-    // WhatsApp config + access token. Account-scoped post-multi-user.
-    const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
-      .select('phone_number_id, access_token')
-      .eq('account_id', accountId)
-      .single();
-
-    if (configError || !config) {
-      return NextResponse.json(
-        { error: 'WhatsApp not configured.' },
-        { status: 400 },
-      );
-    }
-
-    const accessToken = decrypt(config.access_token);
-    const sanitizedPhone = sanitizePhoneForMeta(contact.phone);
-
-    try {
-      await sendReactionMessage({
-        phoneNumberId: config.phone_number_id,
-        accessToken,
-        to: sanitizedPhone,
-        targetMessageId: targetMessage.message_id,
-        emoji,
+    // Queue the reaction for the Baileys worker.
+    const { error: enqueueError } = await supabase
+      .from('whatsapp_outbox')
+      .insert({
+        account_id: accountId,
+        conversation_id: targetMessage.conversation_id,
+        to_phone: sanitizePhoneForMeta(contact.phone),
+        message_type: 'reaction',
+        payload: { messageId: targetMessage.message_id, emoji },
+        status: 'pending',
       });
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Unknown Meta API error';
-      console.error('[whatsapp/react] Meta send failed:', message);
+
+    if (enqueueError) {
+      console.error('[whatsapp/react] outbox enqueue failed:', enqueueError.message);
       return NextResponse.json(
-        { error: `Meta API error: ${message}` },
-        { status: 502 },
+        { error: `Failed to queue reaction: ${enqueueError.message}` },
+        { status: 500 },
       );
     }
 
-    // Mirror into DB. Empty emoji = removal.
+    // Mirror into DB. Empty emoji = removal. This keeps the thread in sync
+    // over Realtime for other connected agents.
     if (emoji === '') {
       const { error: delError } = await supabase
         .from('message_reactions')
@@ -155,7 +133,7 @@ export async function POST(request: Request) {
       if (delError) {
         console.error('[whatsapp/react] DB delete failed:', delError.message);
         return NextResponse.json(
-          { error: 'Reaction sent to Meta but DB delete failed' },
+          { error: 'Reaction queued but DB delete failed' },
           { status: 500 },
         );
       }
@@ -176,7 +154,7 @@ export async function POST(request: Request) {
       if (upsertError) {
         console.error('[whatsapp/react] DB upsert failed:', upsertError.message);
         return NextResponse.json(
-          { error: 'Reaction sent to Meta but DB upsert failed' },
+          { error: 'Reaction queued but DB upsert failed' },
           { status: 500 },
         );
       }

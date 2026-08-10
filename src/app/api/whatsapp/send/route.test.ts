@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // ---------------------------------------------------------------------------
-// Tests for the `contact_id` send path (issue #296): sending an approved
-// template to a single contact from the Contact detail view. The route must
-// find-or-create the contact's conversation server-side, then run the normal
-// send + persistence path — no inbound message required to bootstrap a thread.
+// Tests for the `contact_id` send path (issue #296): sending a text message
+// to a single contact from the Contact detail view. The route must
+// find-or-create the contact's conversation server-side, then enqueue a
+// `whatsapp_outbox` row for the Baileys worker — no inbound message required
+// to bootstrap a thread. Meta-only payloads (template/interactive) are
+// rejected by the shared send core, since this workspace talks to WhatsApp
+// through Baileys.
 // ---------------------------------------------------------------------------
 
 // Records of what the route wrote, so we can assert the right rows landed.
 const conversationInserts: Array<Record<string, unknown>> = []
-const messageInserts: Array<Record<string, unknown>> = []
+const outboxInserts: Array<Record<string, unknown>> = []
 
 // Toggles for the per-test scenario.
 let existingConversation: Record<string, unknown> | null = null
@@ -42,18 +45,6 @@ function makeSupabaseMock() {
           // Once created this request, a by-id reload returns it (with
           // its contact); otherwise fall back to the canned existing row.
           return { data: createdConversation ?? existingConversation, error: null }
-        case 'whatsapp_config':
-          return {
-            data: {
-              id: 'cfg-1',
-              account_id: 'acct-1',
-              phone_number_id: 'PNID-1',
-              access_token: 'enc-token',
-            },
-            error: null,
-          }
-        case 'message_templates':
-          return { data: null, error: null }
         default:
           return { data: null, error: null }
       }
@@ -71,8 +62,8 @@ function makeSupabaseMock() {
             },
             error: null,
           }
-        case 'messages':
-          return { data: { id: 'msg-1' }, error: null }
+        case 'whatsapp_outbox':
+          return { data: { id: 'obx-1' }, error: null }
         default:
           return { data: null, error: null }
       }
@@ -97,7 +88,7 @@ function makeSupabaseMock() {
           contact: CONTACT,
         }
       }
-      if (table === 'messages') messageInserts.push(payload)
+      if (table === 'whatsapp_outbox') outboxInserts.push(payload)
       return b
     })
     b.single = vi.fn(terminal)
@@ -137,63 +128,45 @@ vi.mock('@/lib/flows/admin-client', () => ({
   }),
 }))
 
-vi.mock('@/lib/whatsapp/encryption', () => ({
-  decrypt: vi.fn(() => 'plaintext-token'),
-  encrypt: vi.fn(() => 'enc-token'),
-  isLegacyFormat: vi.fn(() => false),
-}))
-
-const { sendTemplateMessage } = vi.hoisted(() => ({
-  sendTemplateMessage: vi.fn(async () => ({ messageId: 'wamid-1' })),
-}))
-vi.mock('@/lib/whatsapp/meta-api', () => ({
-  sendTemplateMessage,
-  sendTextMessage: vi.fn(),
-  sendMediaMessage: vi.fn(),
-}))
-
 import { POST } from './route'
 
-function postContactTemplate(overrides: Record<string, unknown> = {}) {
+function postTextToContact(overrides: Record<string, unknown> = {}) {
   return POST(
     new Request('http://localhost/api/whatsapp/send', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contact_id: 'contact-1',
-        message_type: 'template',
-        template_name: 'order_update',
-        template_language: 'en_US',
-        template_message_params: { body: ['Acme', '#1234'] },
-        template_params: ['Acme', '#1234'],
+        message_type: 'text',
+        content_text: 'Olá! Como posso ajudar?',
         ...overrides,
       }),
     }),
   )
 }
 
-describe('POST /api/whatsapp/send — contact_id template path', () => {
+describe('POST /api/whatsapp/send — contact_id text path', () => {
   beforeEach(() => {
     conversationInserts.length = 0
-    messageInserts.length = 0
+    outboxInserts.length = 0
     existingConversation = null
     createdConversation = null
     contactRow = CONTACT
     supabaseMock = makeSupabaseMock()
-    sendTemplateMessage.mockClear()
   })
 
   afterEach(() => {
     vi.clearAllMocks()
   })
 
-  it('creates a conversation for a contact with none, then sends the template', async () => {
-    const res = await postContactTemplate()
+  it('creates a conversation for a contact with none, then enqueues the message', async () => {
+    const res = await postTextToContact()
     const json = await res.json()
 
     expect(res.status).toBe(200)
     expect(json.success).toBe(true)
-    expect(json.whatsapp_message_id).toBe('wamid-1')
+    expect(json.message_id).toBe('obx-1')
+    expect(json.whatsapp_message_id).toBe('')
 
     // A conversation was created for this contact.
     expect(conversationInserts).toHaveLength(1)
@@ -202,23 +175,18 @@ describe('POST /api/whatsapp/send — contact_id template path', () => {
       contact_id: 'contact-1',
     })
 
-    // The template was sent to the contact's number.
-    expect(sendTemplateMessage).toHaveBeenCalledTimes(1)
-    const args = (sendTemplateMessage.mock.calls[0] as unknown[])[0] as Record<
-      string,
-      unknown
-    >
-    // Meta wants the bare E.164 digits — sanitizePhoneForMeta strips the '+'.
-    expect(args.to).toBe('15551234567')
-    expect(args.templateName).toBe('order_update')
-
-    // The outbound message was persisted under the new conversation.
-    expect(messageInserts).toHaveLength(1)
-    expect(messageInserts[0]).toMatchObject({
+    // The message was enqueued for the Baileys worker, addressed to the
+    // contact's number (sanitizePhoneForMeta strips the '+').
+    expect(outboxInserts).toHaveLength(1)
+    expect(outboxInserts[0]).toMatchObject({
+      account_id: 'acct-1',
       conversation_id: 'conv-new',
-      content_type: 'template',
-      template_name: 'order_update',
-      sender_type: 'agent',
+      to_phone: '15551234567',
+      message_type: 'text',
+      status: 'pending',
+    })
+    expect(outboxInserts[0].payload).toMatchObject({
+      text: 'Olá! Como posso ajudar?',
     })
   })
 
@@ -230,22 +198,22 @@ describe('POST /api/whatsapp/send — contact_id template path', () => {
       contact: CONTACT,
     }
 
-    const res = await postContactTemplate()
+    const res = await postTextToContact()
     expect(res.status).toBe(200)
 
     expect(conversationInserts).toHaveLength(0)
-    expect(messageInserts[0]).toMatchObject({ conversation_id: 'conv-existing' })
+    expect(outboxInserts[0]).toMatchObject({ conversation_id: 'conv-existing' })
   })
 
   it('404s when the contact is not in the caller account', async () => {
     contactRow = null
 
-    const res = await postContactTemplate()
+    const res = await postTextToContact()
     const json = await res.json()
 
     expect(res.status).toBe(404)
     expect(json.error).toMatch(/contact not found/i)
-    expect(sendTemplateMessage).not.toHaveBeenCalled()
+    expect(outboxInserts).toHaveLength(0)
   })
 
   it('400s when neither conversation_id nor contact_id is provided', async () => {
@@ -253,9 +221,21 @@ describe('POST /api/whatsapp/send — contact_id template path', () => {
       new Request('http://localhost/api/whatsapp/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message_type: 'template', template_name: 'x' }),
+        body: JSON.stringify({ message_type: 'text', content_text: 'hi' }),
       }),
     )
     expect(res.status).toBe(400)
+  })
+
+  it('rejects a Meta-only template payload without enqueueing', async () => {
+    const res = await postTextToContact({
+      message_type: 'template',
+      template_name: 'order_update',
+    })
+    const json = await res.json()
+
+    expect(res.status).toBe(400)
+    expect(json.error).toMatch(/Meta Cloud API/)
+    expect(outboxInserts).toHaveLength(0)
   })
 })

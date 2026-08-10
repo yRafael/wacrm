@@ -187,7 +187,16 @@ export interface Conversation {
 // Notifications (migration 027)
 // ============================================================
 
-export type NotificationType = 'conversation_assigned';
+/**
+ * Migration 040 extends the DB CHECK with the renewal/payment/session
+ * types the worker scheduler and complete_renewal emit.
+ */
+export type NotificationType =
+  | 'conversation_assigned'
+  | 'renewal_due'
+  | 'renewal_paid'
+  | 'payment_received'
+  | 'whatsapp_disconnected';
 
 export interface Notification {
   id: string;
@@ -645,4 +654,113 @@ export interface QuickReply {
   interactive_payload?: InteractiveMessagePayload | null;
   created_at: string;
   updated_at: string;
+}
+
+// ============================================================
+// IPTV credentials (migration 038) — Fase 2
+// ============================================================
+
+export type PanelType = 'sigma' | 'xtream' | 'xui' | 'horus' | 'generic';
+export type IptvCredentialStatus = 'active' | 'expired' | 'revoked';
+
+export interface IptvCredential {
+  id: string;
+  account_id: string;
+  contact_id: string;
+  username: string;
+  /**
+   * AES-256-GCM ciphertext (from src/lib/whatsapp/encryption.ts). The
+   * plaintext lives nowhere at rest and is never included in the
+   * customer-facing message.
+   */
+  password?: string | null;
+  /** Panel family the parser guessed — metadata only. */
+  panel_type?: PanelType | null;
+  expires_at: string;
+  /** Days added on renewal (30/90/180/365); null until a renewal sets it. */
+  duration_days?: number | null;
+  status: IptvCredentialStatus;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  deleted_at?: string | null;
+}
+
+// ============================================================
+// Finance + renewals (migration 040) — Fase 3
+// ============================================================
+
+export type PaymentMethod = 'pix' | 'cash' | 'card' | 'transfer' | 'boleto' | 'credit';
+export type PaymentStatus = 'pending' | 'paid' | 'late' | 'canceled' | 'refunded' | 'partial';
+
+/** A receivable ("conta a receber") — scheduled/pending renewal the customer owes. */
+export interface Payment {
+  id: string;
+  account_id: string;
+  contact_id: string;
+  amount: number;
+  method: PaymentMethod;
+  status: PaymentStatus;
+  due_at: string;
+  paid_at?: string | null;
+  notes?: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Joined by the data layer when the UI needs display context. */
+  contact?: Contact;
+}
+
+export type FinancialTransactionType = 'income' | 'expense' | 'transfer' | 'adjustment' | 'refund';
+export type FinancialCategory =
+  | 'sale'
+  | 'renewal'
+  | 'server'
+  | 'internet'
+  | 'marketing'
+  | 'salary'
+  | 'taxes'
+  | 'other';
+
+/** One immutable cash-ledger entry. Corrections are new 'adjustment' rows. */
+export interface FinancialTransaction {
+  id: string;
+  account_id: string;
+  type: FinancialTransactionType;
+  category: FinancialCategory;
+  amount: number;
+  method: PaymentMethod;
+  /** Cost center (doc Cap. 44) — free-text tag, e.g. "Residencial". */
+  center_cost?: string | null;
+  /** Related contact for customer-facing entries; null for operating expenses. */
+  contact_id?: string | null;
+  /** Source row reference (e.g. the renewals.id that booked this income). */
+  reference_id?: string | null;
+  description?: string | null;
+  occurred_at: string;
+  created_at: string;
+  contact?: Contact;
+}
+
+export type RenewalType = 'manual' | 'automatic' | 'promotional' | 'courtesy';
+export type RenewalStatus = 'scheduled' | 'pending' | 'paid' | 'renewed' | 'canceled' | 'expired';
+
+/** Immutable renewal history — one row per completed renewal, old→new expiry. */
+export interface Renewal {
+  id: string;
+  account_id: string;
+  contact_id: string;
+  iptv_credential_id?: string | null;
+  old_expires_at?: string | null;
+  new_expires_at: string;
+  amount: number;
+  payment_id?: string | null;
+  duration_days: number;
+  renewal_type: RenewalType;
+  status: RenewalStatus;
+  /** The user who completed the renewal (auth.users). */
+  renewed_by?: string | null;
+  notes?: string | null;
+  created_at: string;
+  contact?: Contact;
+  iptv_credential?: IptvCredential;
 }

@@ -8,9 +8,11 @@ import {
 
 describe("formatCurrency", () => {
   it("formats whole amounts with no minor units", () => {
-    // Use a non-breaking-space-tolerant check: Intl may insert NBSP.
+    // The thousands separator is locale-dependent (comma in en-US, dot in
+    // pt-BR, NBSP/space in several European locales) and Intl may insert
+    // NBSP — so match any standard grouping separator, not just the comma.
     const out = formatCurrency(1234, "USD");
-    expect(out).toContain("1,234");
+    expect(out).toMatch(/1[\s.,]234/);
     expect(out).not.toContain(".00");
   });
 
@@ -30,13 +32,13 @@ describe("formatCurrency", () => {
     // Intl is lenient here — it uses the code as the symbol.
     const out = formatCurrency(1234, "ZZZ");
     expect(out).toContain("ZZZ");
-    expect(out).toContain("1,234");
+    expect(out).toMatch(/1[\s.,]234/);
   });
 
   it("never throws on a structurally invalid code (no DB CHECK on deals.currency)", () => {
     for (const bad of ["United States", "US", "USDD", "12", "u$d"]) {
       expect(() => formatCurrency(1234, bad)).not.toThrow();
-      expect(formatCurrency(1234, bad)).toContain("1,234");
+      expect(formatCurrency(1234, bad)).toMatch(/1[\s.,]234/);
     }
   });
 

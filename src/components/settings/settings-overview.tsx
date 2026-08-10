@@ -40,15 +40,15 @@ export function SettingsOverview({
     useAuth();
   const { mode, theme } = useTheme();
   const t = useTranslations('Settings.overview');
-  const tRoles = useTranslations('roles');
+  const tRoles = useTranslations('Settings.roles');
   const tSections = useTranslations('Settings.sections');
 
   const [counts, setCounts] = useState<OverviewCounts | null>(null);
   const [countsLoading, setCountsLoading] = useState(true);
-  // WhatsApp status is tracked separately: its health check decrypts the
-  // token and pings Meta, which is far slower than the cheap count
-  // queries. Gating it independently keeps a slow/flaky Meta round-trip
-  // from blanking the rest of the landing.
+  // WhatsApp status is tracked separately from the cheap count queries:
+  // it reads the Baileys `whatsapp_sessions` table, whose rows the
+  // worker mutates. Gating it independently keeps the tile from
+  // blocking the rest of the landing.
   const [whatsapp, setWhatsapp] = useState<WhatsAppStatus | null>(null);
   const [whatsappLoading, setWhatsappLoading] = useState(true);
 
@@ -117,21 +117,21 @@ export function SettingsOverview({
       setCountsLoading(false);
     })();
 
-    // WhatsApp connection status — slower, independent.
+    // WhatsApp connection status — Baileys sessions, not Meta. Any
+    // session row means the transport is set up; CONNECTED means at
+    // least one number is actually live.
     (async () => {
       setWhatsappLoading(true);
-      const [row, health] = await Promise.allSettled([
-        supabase
-          .from('whatsapp_config')
-          .select('phone_number_id')
-          .eq('account_id', acctId)
-          .maybeSingle(),
-        fetch('/api/whatsapp/config', { cache: 'no-store' }).then((r) => r.json()),
-      ]);
+      const res = await supabase
+        .from('whatsapp_sessions')
+        .select('status')
+        .eq('account_id', acctId)
+        .neq('status', 'DISCONNECTED');
       if (cancelled) return;
+      const sessions = (res.data ?? []) as Array<{ status: string }>;
       setWhatsapp({
-        configured: row.status === 'fulfilled' && !!row.value.data?.phone_number_id,
-        connected: health.status === 'fulfilled' && !!health.value?.connected,
+        configured: sessions.length > 0,
+        connected: sessions.some((s) => s.status === 'CONNECTED'),
       });
       setWhatsappLoading(false);
     })();

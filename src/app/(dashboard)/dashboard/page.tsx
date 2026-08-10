@@ -27,6 +27,7 @@ import type {
 } from '@/lib/dashboard/types'
 
 import { MetricCard } from '@/components/dashboard/metric-card'
+import { FireHero } from '@/components/dashboard/fire-hero'
 import { SkeletonCard } from '@/components/dashboard/skeleton'
 import { QuickActions } from '@/components/dashboard/quick-actions'
 import { ConversationsChart } from '@/components/dashboard/conversations-chart'
@@ -131,6 +132,9 @@ export default function DashboardPage() {
         </p>
       </div>
 
+      {/* Painel "vivo" — mascote fala com o operador (saudação, frase, chips) */}
+      <FireHero />
+
       {/* Metric cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {metricsLoading || !metrics ? (
@@ -140,12 +144,13 @@ export default function DashboardPage() {
             <MetricCard
               title={t('activeConversations')}
               value={metrics.activeConversations.current.toLocaleString()}
+              animatedValue={metrics.activeConversations.current}
               icon={MessageSquare}
               delta={{
                 sign: metrics.activeConversations.previous,
                 label: deltaLabel(
-                  metrics.activeConversations.previous, 
-                  t('newTodayVsYesterday'), 
+                  metrics.activeConversations.previous,
+                  t('newTodayVsYesterday'),
                   t('noChange', { suffix: t('newTodayVsYesterday') })
                 ),
               }}
@@ -153,6 +158,7 @@ export default function DashboardPage() {
             <MetricCard
               title={t('newContactsToday')}
               value={metrics.newContactsToday.current.toLocaleString()}
+              animatedValue={metrics.newContactsToday.current}
               icon={UserPlus}
               delta={{
                 sign:
@@ -173,6 +179,7 @@ export default function DashboardPage() {
             <MetricCard
               title={t('messagesSentToday')}
               value={metrics.messagesSentToday.current.toLocaleString()}
+              animatedValue={metrics.messagesSentToday.current}
               icon={Send}
               delta={{
                 sign:

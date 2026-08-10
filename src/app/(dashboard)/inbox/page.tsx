@@ -13,7 +13,6 @@ import { useRealtime } from "@/hooks/use-realtime";
 import { ConversationList } from "@/components/inbox/conversation-list";
 import { MessageThread } from "@/components/inbox/message-thread";
 import { ContactSidebar } from "@/components/inbox/contact-sidebar";
-import { toast } from "sonner";
 import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -172,7 +171,11 @@ function InboxPageInner() {
     }
   }, []);
 
-  // Check WhatsApp connection status on mount
+  // Check WhatsApp connection status on mount. The transport is now
+  // Baileys (`whatsapp_sessions`) instead of the dormant Meta
+  // `whatsapp_config` — the account is "connected" when at least one
+  // session row is live. Any teammate's profile resolves to the same
+  // account, so sessions created by the admin show up here too.
   useEffect(() => {
     const checkConnection = async () => {
       const supabase = createClient();
@@ -183,12 +186,6 @@ function InboxPageInner() {
 
       if (!user) return;
 
-      // whatsapp_config is one-row-per-account post-multi-user, so
-      // the previous `.eq('user_id', user.id)` would miss the row
-      // for any teammate who didn't personally save the config —
-      // the "WhatsApp not connected" banner would show in the
-      // shared inbox even though the admin had it configured.
-      // Resolve account_id via the profile and query by that.
       const { data: profile } = await supabase
         .from("profiles")
         .select("account_id")
@@ -201,12 +198,13 @@ function InboxPageInner() {
       }
 
       const { data } = await supabase
-        .from("whatsapp_config")
+        .from("whatsapp_sessions")
         .select("status")
         .eq("account_id", accountId)
-        .maybeSingle();
+        .eq("status", "CONNECTED")
+        .limit(1);
 
-      setWhatsappConnected(data?.status === "connected");
+      setWhatsappConnected((data?.length ?? 0) > 0);
     };
 
     checkConnection();

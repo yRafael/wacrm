@@ -8,9 +8,12 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
 import {
+  Activity,
   Bell,
   Bot,
+  CalendarClock,
   Crown,
+  FileText,
   GitBranch,
   LayoutDashboard,
   LogOut,
@@ -20,12 +23,15 @@ import {
   Shield,
   User,
   UserCog,
+  UserCheck,
   Users,
   UsersRound,
+  Wallet,
   Workflow,
   X,
   Zap,
 } from "lucide-react";
+import { FlameMascot } from "@/components/brand/flame-mascot";
 import type { AccountRole } from "@/lib/auth/roles";
 
 // Per-role chip metadata used in the sidebar's account strip + the
@@ -91,6 +97,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { href: "/dashboard", labelKey: "dashboard", icon: LayoutDashboard },
+  { href: "/pulse", labelKey: "pulse", icon: Activity },
   { href: "/inbox", labelKey: "inbox", icon: MessageSquare },
   { href: "/notifications", labelKey: "notifications", icon: Bell },
   { href: "/contacts", labelKey: "contacts", icon: Users },
@@ -99,6 +106,10 @@ const navItems: NavItem[] = [
   { href: "/automations", labelKey: "automations", icon: Zap },
   { href: "/flows", labelKey: "flows", icon: Workflow, beta: true },
   { href: "/agents", labelKey: "aiAgents", icon: Bot },
+  { href: "/clients", labelKey: "clients", icon: UserCheck },
+  { href: "/renewals", labelKey: "renewals", icon: CalendarClock },
+  { href: "/finance", labelKey: "finance", icon: Wallet },
+  { href: "/iptv/parser", labelKey: "parser", icon: FileText },
 ];
 
 const bottomNavItems = [
@@ -182,17 +193,17 @@ export function Sidebar({ open = false, onClose }: SidebarProps) {
           // Desktop: static, always visible — reset all the mobile framing.
           "lg:static lg:z-0 lg:w-60 lg:translate-x-0 lg:transition-none",
         )}
-        aria-label="Primary"
+        aria-label="Principal"
       >
         {/* Logo row. On mobile we put a close button here; on desktop the
             close button is hidden since the sidebar is always-visible. */}
         <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-4">
           <Link href="/dashboard" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <MessageSquare className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
+              <FlameMascot size={22} animated={false} ariaLabel="Fire Play" />
             </div>
-            <span className="text-sm font-semibold text-foreground">
-              {t("title")}
+            <span className="bg-gradient-to-r from-flame-1 to-flame-3 bg-clip-text text-sm font-bold tracking-wide text-transparent">
+              FIRE PLAY
             </span>
           </Link>
           <button

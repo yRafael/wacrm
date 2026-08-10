@@ -25,6 +25,10 @@
     "automations": "Automations",
     "flows": "Flows",
     "aiAgents": "AI Agents",
+    "clients": "Clients",
+    "renewals": "Renewals",
+    "finance": "Finance",
+    "parser": "IPTV Parser",
     "settings": "Settings",
     "beta": "Beta",
     "unreadConversations": "{count} unread {count, plural, =1 {conversation} other {conversations}}",
@@ -39,6 +43,44 @@
     "menuProfile": "Profile",
     "menuSettings": "Settings",
     "menuSignOut": "Sign out"
+  },
+  "Parser": {
+    "title": "IPTV credential parser",
+    "subtitle": "Paste the message your IPTV panel sent when the customer paid. The tool extracts the credentials and builds the message you'll send — you confirm everything before saving.",
+    "panelInputLabel": "Panel message",
+    "panelInputPlaceholder": "Paste the panel message here…\n\nExample:\nUsuario: 95184381\nSenha: 85219891\nSua assinatura vence dia: 09/08/2026 20:07",
+    "extractedTitle": "Extracted fields",
+    "extractedHint": "Confirm or fix the fields before saving. The password is stored encrypted and never appears in the customer message.",
+    "usernameLabel": "Username",
+    "passwordLabel": "Password",
+    "expiryLabel": "Expiry",
+    "notesLabel": "Notes",
+    "statusSuccess": "Complete",
+    "statusPartial": "Partial",
+    "statusUnknown": "No credentials found",
+    "confidence": "Confidence {value}%",
+    "source": "Source",
+    "sourceLabels": "Labels",
+    "sourceUrl": "URL",
+    "sourceMixed": "Mixed",
+    "sourceNone": "—",
+    "panelType": "Panel",
+    "matchedLabels": "Matched labels",
+    "errorsTitle": "Heads-up",
+    "contactLabel": "Customer contact",
+    "contactPlaceholder": "Search customer by name or phone…",
+    "contactRequired": "Select a contact to save",
+    "noContacts": "No contacts found",
+    "messageTitle": "Message to customer",
+    "messageHint": "This is what you'll send. It never contains the password.",
+    "templateLabel": "Template",
+    "previewLabel": "Preview",
+    "copyMessage": "Copy message",
+    "copied": "Message copied",
+    "saveButton": "Save credentials",
+    "saving": "Saving…",
+    "saved": "Credentials saved",
+    "saveError": "Couldn't save the credentials"
   },
   "Header": {
     "dashboard": "Dashboard",
@@ -56,6 +98,32 @@
     "menuProfile": "Profile",
     "menuSettings": "Settings",
     "menuSignOut": "Sign out"
+  },
+  "Hero": {
+    "greeting": {
+      "morning": "Good morning!",
+      "afternoon": "Good afternoon!",
+      "evening": "Good evening!"
+    },
+    "phrase": {
+      "busy": "{conversas} {conversas, plural, =1 {conversation is} other {conversations are}} waiting for you to reply",
+      "renewals": "{renewals} {renewals, plural, =1 {renewal completed} other {renewals completed}} today",
+      "sold": "we sold {vendas} this week",
+      "expiring": "{vencendo} {vencendo, plural, =1 {customer expires} other {customers expire}} today",
+      "quiet": "all calm around here. Let's take care of our customers 🔥"
+    },
+    "stats": {
+      "conversasAguardando": "Conversations waiting",
+      "vendasSemana": "Week sales",
+      "vencendoHoje": "Expiring today",
+      "renovacoesHoje": "Renewals today"
+    },
+    "live": {
+      "alive": "Live"
+    },
+    "mascot": {
+      "aria": "Fire Play mascot"
+    }
   },
   "ModeToggle": {
     "switchMode": "Switch to {mode} mode"
@@ -359,9 +427,10 @@
         "custom": "Custom Fields",
         "deals": "Deals",
         "tags": "Tags",
-      "noTags": "No tags",
-      "noDeals": "No deals",
-      "addNotePlaceholder": "Add a note..."
+        "iptv": "IPTV",
+        "noTags": "No tags",
+        "noDeals": "No deals",
+        "addNotePlaceholder": "Add a note..."
       },
       "actions": {
         "edit": "Edit",
@@ -395,6 +464,29 @@
       "tagsTab": {
         "clickTagDesc": "Click a tag to add or remove it from this contact.",
         "noTagsAvailable": "No tags available. Create tags in Settings."
+      },
+      "iptvTab": {
+        "credential": "IPTV Credential",
+        "noCredential": "No active credential",
+        "username": "Username",
+        "expiresAt": "Expires",
+        "panelType": "Panel",
+        "validity": "Validity",
+        "daysLeft": "{days} days left",
+        "expiredDaysAgo": "Expired {days} days ago",
+        "statusActive": "Active",
+        "statusExpiringSoon": "Expiring soon",
+        "statusExpired": "Expired",
+        "statusNone": "No credential",
+        "lifetimeRevenue": "Lifetime revenue",
+        "lastPayment": "Last payment",
+        "noPayments": "No payments yet",
+        "nextDue": "Next due",
+        "nothingDue": "Nothing due",
+        "renewals": "Renewals",
+        "noRenewals": "No renewals yet",
+        "firstRenewal": "First renewal",
+        "lastRenewal": "Last renewal"
       },
       "sendTemplateBtn": "Send template",
       "saveChangesBtn": "Save Changes",
@@ -1331,13 +1423,11 @@
       "deleteLocallyAria": "Delete template locally",
       "deleteMetaLocallyTitle": "Delete from Meta and locally",
       "deleteLocallyTitle": "Delete locally",
-      
       "dialogEditTitle": "Edit Message Template",
       "dialogNewTitle": "New Message Template",
       "dialogEditDesc": "Save your changes to re-submit to Meta. Status will flip back to PENDING during review.",
       "dialogNewDesc": "Build a template and submit it to Meta for approval. Once approved, you can use it in broadcasts and the inbox.",
       "authWarning": "AUTHENTICATION templates have a fixed body + OTP button shape that needs a different builder. Create them in Meta WhatsApp Manager for now and use <bold>Sync from Meta</bold> to bring them in.",
-      
       "templateName": "Template Name",
       "namePlaceholder": "e.g. order_confirmation",
       "nameFixed": "Name is fixed once a template exists on Meta — create a new template to change it.",
@@ -1346,7 +1436,6 @@
       "language": "Language",
       "langFixed": "Language is fixed once a template exists on Meta.",
       "langHint": "Must match the exact code on Meta — <code>en_US</code> and <code>en</code> are distinct.",
-      
       "header": "Header",
       "headerNone": "None",
       "headerText": "Text",
@@ -1356,7 +1445,6 @@
       "headerTextPlaceholder": "Header text (max 60 chars, optional {{1}})",
       "headerSampleAria": "Sample value for header variable",
       "headerSamplePlaceholder": "Sample value for {{1}} (required for Meta review)",
-      
       "uploadImage": "Upload image",
       "uploadHint": "JPEG or PNG, ≤5 MB",
       "mediaUrlPlaceholder": "https://… (or paste a public {format} link)",
@@ -1364,17 +1452,14 @@
       "mediaHint": "Must be a publicly accessible HTTPS link. Meta fetches it once during review, so it needs to stay live for ~24 hrs.",
       "videoHint": " Recommended: MP4 / 3GPP, ≤16 MB, ≤60 seconds.",
       "documentHint": " Recommended: PDF, ≤100 MB.",
-      
       "bodyText": "Body Text",
       "bodyPlaceholder": "Hello {{1}}, your order {{2}} is confirmed.",
       "bodyHint": "Use {{1}}, {{2}} for variables (must be contiguous starting at {{1}}).",
       "sampleValues": "Sample values (Meta uses these to review your template)",
       "sampleAria": "Sample value for body variable {var}",
       "samplePlaceholder": "Sample for {var}",
-      
       "footer": "Footer (optional)",
       "footerPlaceholder": "Optional footer text (max 60 chars)",
-      
       "buttons": "Buttons (optional)",
       "addButton": "Add Button",
       "buttonsLimit": "Up to {max} buttons. QUICK_REPLY buttons must come before URL / phone / copy-code buttons.",
@@ -1387,19 +1472,16 @@
       "urlSamplePlaceholder": "Example value for {{1}} (required when URL has a variable)",
       "phonePlaceholder": "+15551234567",
       "codePlaceholder": "Example code (e.g. SUMMER20)",
-      
       "cancel": "Cancel",
       "saving": "Saving…",
       "submitting": "Submitting…",
       "saveResubmit": "Save & Resubmit",
       "submitApproval": "Submit for Approval",
-      
       "deleteDialogTitle": "Delete template?",
       "deleteMetaDesc": "\"{name}\" will be deleted from Meta and from wacrm. Active broadcasts using this template will start failing on their next send. This can't be undone.",
       "deleteLocalDesc": "\"{name}\" will be deleted from wacrm. It was never submitted to Meta, so no remote cleanup is needed.",
       "deleting": "Deleting…",
       "delete": "Delete",
-      
       "toastLoadFailed": "Failed to load templates",
       "toastSubmitFailed": "Failed to submit",
       "toastSubmitEditSuccess": "Edit submitted — Meta typically reviews within 24 hours.",
@@ -1494,6 +1576,54 @@
       "step4_5": "Subscribe to \"messages\" webhook field",
       "metaDocs": "Meta WhatsApp API Documentation"
     },
+    "whatsappSessions": {
+      "title": "WhatsApp sessions",
+      "description": "Pair your WhatsApp Web numbers. Each session is one phone, linked by scanning a QR code. Conversations flow through these sessions into the inbox.",
+      "newSession": "New session",
+      "createTitle": "Create a session",
+      "createDesc": "Name the session (the number or team using it), then scan the QR with the phone you're pairing.",
+      "nameLabel": "Session name",
+      "namePlaceholder": "e.g. Support line",
+      "nameRequired": "Give the session a name.",
+      "cancel": "Cancel",
+      "creating": "Creating…",
+      "create": "Create session",
+      "created": "Session created — scan the QR below.",
+      "createFailed": "Could not create the session.",
+      "loading": "Loading…",
+      "emptyTitle": "No sessions yet",
+      "emptyDesc": "Create a session and scan the QR with the WhatsApp you want to pair — messages will land in the inbox.",
+      "readOnlyTitle": "Viewing as read-only",
+      "readOnlyDesc": "Only admins can create or manage sessions. You can monitor connection status here.",
+      "reconnected": "Reconnect requested.",
+      "disconnected": "Session disconnected.",
+      "deleted": "Session deleted.",
+      "deleteConfirm": "Delete this session? The paired connection is removed and can only be restored by re-scanning the QR.",
+      "actionFailed": "Could not update the session.",
+      "qrHint": "Open WhatsApp on the phone you're pairing → Settings → Linked devices → Link a device, then scan this QR.",
+      "qrExpires": "QR expires {time}",
+      "lastActivity": "Active {time}",
+      "neverActive": "No activity yet",
+      "error": "Error: {error}",
+      "refreshQr": "Refresh QR",
+      "reconnect": "Reconnect",
+      "disconnect": "Disconnect",
+      "delete": "Delete",
+      "status": {
+        "DISCONNECTED": "Disconnected",
+        "CONNECTING": "Connecting…",
+        "QR_CODE": "Waiting for scan",
+        "CONNECTED": "Connected",
+        "RECONNECTING": "Reconnecting…",
+        "ERROR": "Error",
+        "BLOCKED": "Blocked"
+      }
+    },
+    "templatesPlaceholder": {
+      "description": "Meta message templates are for the official WhatsApp Business API, which this workspace doesn't use. Reusable replies live in Quick Replies.",
+      "title": "Message templates aren't used here",
+      "body": "Conversations go through WhatsApp Web (Baileys). Sending is always manual from the composer, and canned responses are managed under Quick Replies."
+    },
     "sections": {
       "overview": "Overview",
       "profile": "Your profile",
@@ -1539,7 +1669,6 @@
       "profileSaved": "Profile saved",
       "emailChangeFailed": "Email change failed: {message}",
       "profileSavedEmailCheck": "Profile saved — check your email to confirm the address change",
-      
       "passwordTitle": "Password",
       "passwordDesc": "Use at least {min} characters. You will stay signed in on this device after changing it.",
       "currentPassword": "Current password",
@@ -1553,7 +1682,6 @@
       "currentPasswordIncorrect": "Current password is incorrect",
       "passwordUpdateFailed": "Password update failed: {message}",
       "passwordUpdated": "Password updated",
-      
       "sessionsTitle": "Active sessions",
       "sessionsDesc": "Sign out of every device where you're logged in — including this one. Useful if you lost a laptop or shared your password.",
       "signOutAll": "Sign out of all devices",
@@ -1694,5 +1822,116 @@
       "reindexTooltip": "Re-embed all documents (e.g. after adding an embeddings key)",
       "loading": "Loading…"
     }
+  },
+  "Finance": {
+    "title": "Finance",
+    "subtitle": "Cash flow, MRR, and receivables for your IPTV operation.",
+    "balance": "Balance",
+    "balanceSub": "All-time net of the ledger",
+    "revenueToday": "Revenue today",
+    "revenueTodaySub": "Income booked since midnight",
+    "revenue30d": "Revenue (30 days)",
+    "revenue30dSub": "Trailing 30-day income",
+    "mrr": "MRR",
+    "mrrSub": "{arr} ARR",
+    "trend": "Cash flow trend",
+    "last6Months": "Last 6 months",
+    "revenueByCategory": "Revenue by category",
+    "noData": "No income recorded yet.",
+    "categorySale": "IPTV sale",
+    "categoryRenewal": "Renewal",
+    "categoryServer": "Server",
+    "categoryInternet": "Internet",
+    "categoryMarketing": "Marketing",
+    "categorySalary": "Salary",
+    "categoryTaxes": "Taxes",
+    "categoryOther": "Other",
+    "health": "Receivables health",
+    "avgTicket": "Average ticket",
+    "openReceivables": "Open receivables",
+    "delinquency": "Delinquency",
+    "arrears": "In arrears",
+    "arrearsSub": "{count} {count, plural, =1 {overdue payment} other {overdue payments}}"
+  },
+  "Renewals": {
+    "title": "Renewals",
+    "subtitle": "The IPTV renewal agenda — payments due, confirmations, and history.",
+    "agendaTitle": "Upcoming renewals",
+    "agendaSub": "Payments due grouped by urgency. Confirm a payment to renew the credential.",
+    "registerPayment": "Register payment",
+    "registerPaymentSub": "Open a receivable for a customer. Confirm it later from the agenda.",
+    "noPermission": "You need agent access or higher to manage payments.",
+    "contact": "Customer",
+    "searchContact": "Search customer by name or phone…",
+    "noContacts": "No contacts found",
+    "amount": "Amount",
+    "dueAt": "Due",
+    "methodLabel": "Method",
+    "notes": "Notes",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saveError": "Something went wrong",
+    "paymentCreated": "Payment registered",
+    "confirmBtn": "Confirm payment",
+    "confirmTitle": "Confirm payment",
+    "confirmSub": "Marks the payment as paid and renews the customer's credential by the chosen duration.",
+    "duration": "Renewal duration",
+    "durationDefault": "Keep current duration",
+    "durationDays": "{count} days",
+    "durationHint": "Only applies when the customer has an active credential.",
+    "renewalCompleted": "Renewal completed",
+    "emptyBucket": "Nothing here",
+    "history": "Renewal history",
+    "emptyHistory": "No renewals completed yet.",
+    "expiresAt": "new expiry",
+    "noContact": "Unknown contact",
+    "method": {
+      "pix": "Pix",
+      "cash": "Cash",
+      "card": "Card",
+      "transfer": "Transfer",
+      "boleto": "Boleto",
+      "credit": "Credit"
+    },
+    "status": {
+      "pending": "Pending",
+      "paid": "Paid",
+      "late": "Late",
+      "canceled": "Canceled",
+      "refunded": "Refunded",
+      "partial": "Partial"
+    },
+    "agenda": {
+      "overdue": "Overdue",
+      "today": "Due today",
+      "tomorrow": "Due tomorrow",
+      "week": "Due this week",
+      "month": "Due this month"
+    },
+    "renewalType": {
+      "manual": "Manual",
+      "automatic": "Automatic",
+      "promotional": "Promotional",
+      "courtesy": "Courtesy"
+    }
+  },
+  "Clients": {
+    "title": "Clients",
+    "subtitle": "Every contact with an IPTV credential, at a glance.",
+    "filterAll": "All",
+    "filterActive": "Active",
+    "filterExpiring": "Expiring soon",
+    "filterExpired": "Expired",
+    "colContact": "Contact",
+    "colPhone": "Phone",
+    "colUser": "Username",
+    "colExpiry": "Expiry",
+    "colStatus": "Status",
+    "statusActive": "Active",
+    "statusExpiring": "Expiring soon",
+    "statusExpired": "Expired",
+    "statusNone": "No credential",
+    "empty": "No clients match this filter.",
+    "noName": "Unnamed contact"
   }
 }

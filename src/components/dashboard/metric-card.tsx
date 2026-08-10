@@ -1,12 +1,20 @@
 import { ArrowDown, ArrowUp, Minus } from 'lucide-react'
 import type { ComponentType } from 'react'
 import { cn } from '@/lib/utils'
+import { AnimatedNumber } from '@/components/ui/animated-number'
 
 interface MetricCardProps {
   title: string
   /** Pre-formatted value for display (e.g. "42" or "$1,250"). */
   value: string
   icon: ComponentType<{ className?: string }>
+  /**
+   * When present, the numeric value counts up from 0 on mount via
+   * <AnimatedNumber>. The `value` string is still used as a fallback
+   * (e.g. during SSR hydration) and for currency formatting — pass the
+   * raw number here and a formatted string in `value`.
+   */
+  animatedValue?: number
   /**
    * Delta-mode secondary row: arrow + delta text. Omit when the metric
    * doesn't have a sensible comparison (e.g. total pipeline value).
@@ -21,7 +29,7 @@ interface MetricCardProps {
   subtitle?: string
 }
 
-export function MetricCard({ title, value, icon: Icon, delta, subtitle }: MetricCardProps) {
+export function MetricCard({ title, value, icon: Icon, delta, subtitle, animatedValue }: MetricCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-start justify-between">
@@ -31,7 +39,11 @@ export function MetricCard({ title, value, icon: Icon, delta, subtitle }: Metric
         </div>
       </div>
       <p className="mt-3 text-[28px] leading-none font-bold tabular-nums text-foreground">
-        {value}
+        {animatedValue !== undefined ? (
+          <AnimatedNumber value={animatedValue} formatter={() => value} />
+        ) : (
+          value
+        )}
       </p>
       {delta ? <DeltaRow sign={delta.sign} label={delta.label} /> : subtitle ? (
         <p className="mt-2 text-sm text-muted-foreground">{subtitle}</p>

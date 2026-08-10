@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/client';
 import { addContactTag, deleteContactTag } from '@/lib/contacts/tag-api';
 import { useAuth } from '@/hooks/use-auth';
 import { formatCurrency } from '@/lib/currency';
+import { getClientStats, type ClientStats } from '@/lib/iptv/client-stats';
 import { toast } from 'sonner';
-import type { Contact, Tag, ContactTag, ContactNote, CustomField, ContactCustomValue, Deal, MessageTemplate } from '@/types';
+import type { Contact, Tag, ContactNote, CustomField, Deal, MessageTemplate } from '@/types';
 import {
   TemplatePicker,
   type TemplateSendValues,
@@ -24,8 +25,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Phone,
   Mail,
@@ -36,7 +35,6 @@ import {
   Plus,
   Trash2,
   Save,
-  X,
   DollarSign,
   LayoutTemplate,
 } from 'lucide-react';
@@ -96,6 +94,10 @@ export function ContactDetailView({
   // Deals tab
   const [deals, setDeals] = useState<Deal[]>([]);
   const [loadingDeals, setLoadingDeals] = useState(false);
+
+  // IPTV tab (Perfil 360°) — aggregated by client-stats, not re-queried here.
+  const [clientStats, setClientStats] = useState<ClientStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   const fetchContact = useCallback(async () => {
     if (!contactId) return;
@@ -180,6 +182,14 @@ export function ContactDetailView({
     setLoadingDeals(false);
   }, [contactId, supabase]);
 
+  const fetchStats = useCallback(async () => {
+    if (!contactId || !accountId) return;
+    setLoadingStats(true);
+    const stats = await getClientStats(supabase, accountId, contactId);
+    setClientStats(stats);
+    setLoadingStats(false);
+  }, [contactId, accountId, supabase]);
+
   useEffect(() => {
     if (open && contactId) {
       fetchContact();
@@ -187,8 +197,9 @@ export function ContactDetailView({
       fetchNotes();
       fetchCustomFields();
       fetchDeals();
+      fetchStats();
     }
-  }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchDeals]);
+  }, [open, contactId, fetchContact, fetchTags, fetchNotes, fetchCustomFields, fetchDeals, fetchStats]);
 
   async function copyPhone() {
     if (!contact) return;
@@ -359,8 +370,8 @@ export function ContactDetailView({
 
       toast.success(t('toastTemplateSent', { name: template.name }));
     } catch (err) {
-      const reason = err instanceof Error ? err.message : 'network error';
-      toast.error(`Failed to send template: ${reason}`);
+      const reason = err instanceof Error ? err.message : 'erro de rede';
+      toast.error(`Falha ao enviar o modelo: ${reason}`);
     } finally {
       setSendingTemplate(false);
     }
@@ -375,6 +386,24 @@ export function ContactDetailView({
       .toUpperCase()
       .slice(0, 2);
   }
+
+  function fmtDate(iso?: string | null) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  }
+
+  // Expiry badge style — one mapping shared by the status pill and the
+  // credential card, mirroring the clients-table colors.
+  const EXPIRY_STYLE: Record<string, string> = {
+    active: 'bg-primary/10 text-primary',
+    expiring_soon: 'bg-amber-500/10 text-amber-500',
+    expired: 'bg-red-500/10 text-red-500',
+    none: 'bg-muted text-muted-foreground',
+  };
 
   return (
     <>
@@ -481,6 +510,12 @@ export function ContactDetailView({
                   className="data-active:bg-muted data-active:text-primary text-muted-foreground"
                 >
                   {t('tabs.deals')}
+                </TabsTrigger>
+                <TabsTrigger
+                  value="iptv"
+                  className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+                >
+                  {t('tabs.iptv')}
                 </TabsTrigger>
               </TabsList>
 
@@ -741,6 +776,157 @@ export function ContactDetailView({
                         </div>
                       </div>
                     ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* IPTV Tab — Perfil 360° (client-stats) */}
+              <TabsContent value="iptv" className="flex-1 overflow-y-auto px-4 py-3">
+                {loadingStats ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="size-5 animate-spin text-primary" />
+                  </div>
+                ) : !clientStats ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    {t('iptvTab.noCredential')}
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {/* Credential */}
+                    <div className="rounded-lg border border-border bg-muted/50 p-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-medium text-foreground">
+                          {t('iptvTab.credential')}
+                        </p>
+                        <span
+                          className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                            EXPIRY_STYLE[clientStats.status]
+                          }`}
+                        >
+                          {clientStats.status === 'active' &&
+                            t('iptvTab.statusActive')}
+                          {clientStats.status === 'expiring_soon' &&
+                            t('iptvTab.statusExpiringSoon')}
+                          {clientStats.status === 'expired' &&
+                            t('iptvTab.statusExpired')}
+                          {clientStats.status === 'none' &&
+                            t('iptvTab.statusNone')}
+                        </span>
+                      </div>
+                      {clientStats.credential ? (
+                        <div className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+                          <div className="flex justify-between gap-2">
+                            <span>{t('iptvTab.username')}</span>
+                            <span className="font-medium text-foreground">
+                              {clientStats.credential.username}
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span>{t('iptvTab.expiresAt')}</span>
+                            <span className="font-medium text-foreground">
+                              {fmtDate(clientStats.expiresAt)}
+                            </span>
+                          </div>
+                          {clientStats.credential.panel_type && (
+                            <div className="flex justify-between gap-2">
+                              <span>{t('iptvTab.panelType')}</span>
+                              <span className="font-medium text-foreground capitalize">
+                                {clientStats.credential.panel_type}
+                              </span>
+                            </div>
+                          )}
+                          {clientStats.daysUntilExpiry !== null &&
+                            clientStats.status !== 'none' && (
+                              <div className="flex justify-between gap-2">
+                                <span>{t('iptvTab.validity')}</span>
+                                <span className="font-medium text-foreground">
+                                  {clientStats.daysUntilExpiry >= 0
+                                    ? t('iptvTab.daysLeft', {
+                                        days: clientStats.daysUntilExpiry,
+                                      })
+                                    : t('iptvTab.expiredDaysAgo', {
+                                        days: Math.abs(clientStats.daysUntilExpiry),
+                                      })}
+                                </span>
+                              </div>
+                            )}
+                        </div>
+                      ) : (
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {t('iptvTab.noCredential')}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Revenue */}
+                    <div className="rounded-lg border border-border bg-muted/50 p-3">
+                      <p className="text-sm font-medium text-foreground">
+                        {t('iptvTab.lifetimeRevenue')}
+                      </p>
+                      <p className="mt-1 text-lg font-semibold text-foreground">
+                        {formatCurrency(clientStats.lifetimeRevenue, defaultCurrency)}
+                      </p>
+                      <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        <div className="flex justify-between gap-2">
+                          <span>{t('iptvTab.lastPayment')}</span>
+                          <span className="text-foreground">
+                            {clientStats.lastPayment
+                              ? `${formatCurrency(
+                                  clientStats.lastPayment.amount,
+                                  defaultCurrency,
+                                )} · ${fmtDate(
+                                  clientStats.lastPayment.paid_at ??
+                                    clientStats.lastPayment.due_at,
+                                )}`
+                              : t('iptvTab.noPayments')}
+                          </span>
+                        </div>
+                        <div className="flex justify-between gap-2">
+                          <span>{t('iptvTab.nextDue')}</span>
+                          <span className="text-foreground">
+                            {clientStats.nextDuePayment
+                              ? `${formatCurrency(
+                                  clientStats.nextDuePayment.amount,
+                                  defaultCurrency,
+                                )} · ${fmtDate(clientStats.nextDuePayment.due_at)}`
+                              : t('iptvTab.nothingDue')}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Renewal history */}
+                    <div className="rounded-lg border border-border bg-muted/50 p-3">
+                      <p className="text-sm font-medium text-foreground">
+                        {t('iptvTab.renewals')}
+                      </p>
+                      <p className="mt-1 text-lg font-semibold text-foreground">
+                        {clientStats.renewalCount}
+                      </p>
+                      <div className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        {clientStats.firstRenewalAt && (
+                          <div className="flex justify-between gap-2">
+                            <span>{t('iptvTab.firstRenewal')}</span>
+                            <span className="text-foreground">
+                              {fmtDate(clientStats.firstRenewalAt)}
+                            </span>
+                          </div>
+                        )}
+                        {clientStats.lastRenewalAt && (
+                          <div className="flex justify-between gap-2">
+                            <span>{t('iptvTab.lastRenewal')}</span>
+                            <span className="text-foreground">
+                              {fmtDate(clientStats.lastRenewalAt)}
+                            </span>
+                          </div>
+                        )}
+                        {clientStats.renewalCount === 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            {t('iptvTab.noRenewals')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
               </TabsContent>

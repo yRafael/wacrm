@@ -153,6 +153,10 @@ export const RATE_LIMITS = {
    *  spend on the account's own LLM key against an accidental
    *  hold-down / script. */
   aiDraft: { limit: 20, windowMs: 60_000 },
+  /** IPTV credential save + parse (`/api/iptv/parser/save`). 30/min per
+   *  user — an operator pasting a panel message and confirming is a few
+   *  calls; 30 bounds a scripted loop pasting garbage into parser_logs. */
+  parser: { limit: 30, windowMs: 60_000 },
   /** AI draft-reply generation, per account. Caps the WHOLE team's
    *  draws on the one shared BYO provider key — without this, N agents
    *  each under their per-user limit could still stampede the account's

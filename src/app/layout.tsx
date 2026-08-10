@@ -22,10 +22,10 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "wacrm",
-    template: "%s — wacrm",
+    default: "Fire Workspace",
+    template: "%s — Fire Workspace",
   },
-  description: "Self-hostable CRM template for WhatsApp.",
+  description: "Workspace de atendimento e operação da Fire Play.",
   robots: {
     index: false,
     follow: false,

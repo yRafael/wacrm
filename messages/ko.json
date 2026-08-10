@@ -25,6 +25,10 @@
     "automations": "자동화",
     "flows": "플로우",
     "aiAgents": "AI 에이전트",
+    "clients": "클라이언트",
+    "renewals": "갱신",
+    "finance": "재무",
+    "parser": "IPTV 파서",
     "settings": "설정",
     "beta": "베타",
     "unreadConversations": "읽지 않은 대화 {count}건",
@@ -39,6 +43,44 @@
     "menuProfile": "프로필",
     "menuSettings": "설정",
     "menuSignOut": "로그아웃"
+  },
+  "Parser": {
+    "title": "IPTV 자격 증명 파서",
+    "subtitle": "고객이 결제했을 때 IPTV 패널이 보낸 메시지를 붙여넣으세요. 도구가 자격 증명을 추출하고 보낼 메시지를 만듭니다. 저장하기 전에 모든 것을 확인합니다.",
+    "panelInputLabel": "패널 메시지",
+    "panelInputPlaceholder": "여기에 패널 메시지를 붙여넣으세요…\n\n예시:\nUsuario: 95184381\nSenha: 85219891\nSua assinatura vence dia: 09/08/2026 20:07",
+    "extractedTitle": "추출된 필드",
+    "extractedHint": "저장하기 전에 필드를 확인하거나 수정하세요. 비밀번호는 암호화되어 저장되며 고객 메시지에 절대 표시되지 않습니다.",
+    "usernameLabel": "사용자 이름",
+    "passwordLabel": "비밀번호",
+    "expiryLabel": "만료일",
+    "notesLabel": "메모",
+    "statusSuccess": "완료",
+    "statusPartial": "부분",
+    "statusUnknown": "자격 증명을 찾을 수 없음",
+    "confidence": "신뢰도 {value}%",
+    "source": "출처",
+    "sourceLabels": "라벨",
+    "sourceUrl": "URL",
+    "sourceMixed": "혼합",
+    "sourceNone": "—",
+    "panelType": "패널",
+    "matchedLabels": "일치한 라벨",
+    "errorsTitle": "알림",
+    "contactLabel": "고객 연락처",
+    "contactPlaceholder": "이름 또는 전화번호로 고객 검색…",
+    "contactRequired": "저장할 연락처를 선택하세요",
+    "noContacts": "연락처를 찾을 수 없음",
+    "messageTitle": "고객에게 보낼 메시지",
+    "messageHint": "이 메시지를 보내게 됩니다. 비밀번호는 포함되지 않습니다.",
+    "templateLabel": "템플릿",
+    "previewLabel": "미리보기",
+    "copyMessage": "메시지 복사",
+    "copied": "메시지가 복사되었습니다",
+    "saveButton": "자격 증명 저장",
+    "saving": "저장 중…",
+    "saved": "자격 증명이 저장되었습니다",
+    "saveError": "자격 증명을 저장할 수 없습니다"
   },
   "Header": {
     "dashboard": "대시보드",
@@ -56,6 +98,32 @@
     "menuProfile": "프로필",
     "menuSettings": "설정",
     "menuSignOut": "로그아웃"
+  },
+  "Hero": {
+    "greeting": {
+      "morning": "좋은 아침이에요!",
+      "afternoon": "좋은 오후예요!",
+      "evening": "좋은 저녁이에요!"
+    },
+    "phrase": {
+      "busy": "응답을 기다리는 대화 {conversas}건이 있어요",
+      "renewals": "오늘 갱신 완료 {renewals}건",
+      "sold": "이번 주 매출은 {vendas}",
+      "expiring": "오늘 만료 {vencendo}건",
+      "quiet": "지금은 조용하네요. 고객을 돌볼 시간이에요 🔥"
+    },
+    "stats": {
+      "conversasAguardando": "대기 중인 대화",
+      "vendasSemana": "주간 매출",
+      "vencendoHoje": "오늘 만료",
+      "renovacoesHoje": "오늘 갱신"
+    },
+    "live": {
+      "alive": "실시간"
+    },
+    "mascot": {
+      "aria": "Fire Play 마스코트"
+    }
   },
   "ModeToggle": {
     "switchMode": "{mode} 모드로 전환"
@@ -358,6 +426,8 @@
         "notes": "메모",
         "custom": "커스텀 필드",
         "deals": "딜",
+        "tags": "태그",
+        "iptv": "IPTV",
         "noTags": "태그 없음",
         "noDeals": "딜 없음",
         "addNotePlaceholder": "메모 추가..."
@@ -394,6 +464,29 @@
       "tagsTab": {
         "clickTagDesc": "태그를 클릭해 이 연락처에 추가하거나 제거하세요.",
         "noTagsAvailable": "사용 가능한 태그가 없습니다. 설정에서 태그를 만드세요."
+      },
+      "iptvTab": {
+        "credential": "IPTV 자격 증명",
+        "noCredential": "활성 자격 증명 없음",
+        "username": "사용자 이름",
+        "expiresAt": "만료일",
+        "panelType": "패널",
+        "validity": "유효 기간",
+        "daysLeft": "{days}일 남음",
+        "expiredDaysAgo": "{days}일 전 만료",
+        "statusActive": "활성",
+        "statusExpiringSoon": "곧 만료",
+        "statusExpired": "만료됨",
+        "statusNone": "자격 증명 없음",
+        "lifetimeRevenue": "누적 매출",
+        "lastPayment": "마지막 결제",
+        "noPayments": "아직 결제가 없습니다",
+        "nextDue": "다음 만기",
+        "nothingDue": "만기 없음",
+        "renewals": "갱신",
+        "noRenewals": "아직 갱신이 없습니다",
+        "firstRenewal": "첫 갱신",
+        "lastRenewal": "마지막 갱신"
       },
       "sendTemplateBtn": "템플릿 보내기",
       "saveChangesBtn": "변경 사항 저장",
@@ -1330,13 +1423,11 @@
       "deleteLocallyAria": "로컬에서 템플릿 삭제",
       "deleteMetaLocallyTitle": "Meta와 로컬에서 삭제",
       "deleteLocallyTitle": "로컬에서 삭제",
-
       "dialogEditTitle": "메시지 템플릿 수정",
       "dialogNewTitle": "새 메시지 템플릿",
       "dialogEditDesc": "변경 사항을 저장해 Meta에 재제출하세요. 검토 중에는 상태가 다시 대기 중으로 바뀝니다.",
       "dialogNewDesc": "템플릿을 만들어 Meta 승인을 요청하세요. 승인되면 브로드캐스트와 인박스에서 사용할 수 있습니다.",
       "authWarning": "AUTHENTICATION 템플릿은 본문과 OTP 버튼 형식이 고정되어 있어 별도의 빌더가 필요합니다. 지금은 Meta WhatsApp 관리자에서 만든 뒤 <bold>Meta에서 동기화</bold>로 가져오세요.",
-
       "templateName": "템플릿 이름",
       "namePlaceholder": "예: order_confirmation",
       "nameFixed": "템플릿이 Meta에 존재하면 이름이 고정됩니다 — 변경하려면 새 템플릿을 만드세요.",
@@ -1345,7 +1436,6 @@
       "language": "언어",
       "langFixed": "템플릿이 Meta에 존재하면 언어가 고정됩니다.",
       "langHint": "Meta의 정확한 코드와 일치해야 합니다 — <code>en_US</code>와 <code>en</code>은 다른 코드입니다.",
-
       "header": "헤더",
       "headerNone": "없음",
       "headerText": "텍스트",
@@ -1355,7 +1445,6 @@
       "headerTextPlaceholder": "헤더 텍스트 (최대 60자, {{1}} 선택 가능)",
       "headerSampleAria": "헤더 변수 샘플 값",
       "headerSamplePlaceholder": "{{1}}의 샘플 값 (Meta 검토에 필요)",
-
       "uploadImage": "이미지 업로드",
       "uploadHint": "JPEG 또는 PNG, 5MB 이하",
       "mediaUrlPlaceholder": "https://… (또는 공개 {format} 링크 붙여넣기)",
@@ -1363,17 +1452,14 @@
       "mediaHint": "공개적으로 접근 가능한 HTTPS 링크여야 합니다. Meta가 검토 중 한 번 가져오므로 약 24시간 동안 살아있어야 합니다.",
       "videoHint": " 권장: MP4 / 3GPP, 16MB 이하, 60초 이하.",
       "documentHint": " 권장: PDF, 100MB 이하.",
-
       "bodyText": "본문 텍스트",
       "bodyPlaceholder": "안녕하세요 {{1}}님, 주문 {{2}}이(가) 확정되었습니다.",
       "sampleValues": "샘플 값 (Meta가 템플릿 검토에 사용합니다)",
       "bodyHint": "변수에는 {{1}}, {{2}}를 사용하세요 ({{1}}부터 연속되어야 합니다).",
       "sampleAria": "본문 변수 {var}의 샘플 값",
       "samplePlaceholder": "{var}의 샘플",
-
       "footer": "푸터 (선택)",
       "footerPlaceholder": "선택적 푸터 텍스트 (최대 60자)",
-
       "buttons": "버튼 (선택)",
       "addButton": "버튼 추가",
       "buttonsLimit": "최대 {max}개 버튼. QUICK_REPLY 버튼은 URL / 전화 / 코드 복사 버튼보다 앞에 와야 합니다.",
@@ -1386,19 +1472,16 @@
       "urlSamplePlaceholder": "{{1}}의 예시 값 (URL에 변수가 있을 때 필요)",
       "phonePlaceholder": "+15551234567",
       "codePlaceholder": "예시 코드 (예: SUMMER20)",
-
       "cancel": "취소",
       "saving": "저장 중…",
       "submitting": "제출 중…",
       "saveResubmit": "저장 & 재제출",
       "submitApproval": "승인 요청",
-
       "deleteDialogTitle": "템플릿을 삭제하시겠습니까?",
       "deleteMetaDesc": "\"{name}\"이(가) Meta와 wacrm에서 삭제됩니다. 이 템플릿을 사용하는 활성 브로드캐스트는 다음 전송부터 실패하기 시작합니다. 되돌릴 수 없습니다.",
       "deleteLocalDesc": "\"{name}\"이(가) wacrm에서 삭제됩니다. Meta에 제출된 적이 없으므로 별도의 원격 정리가 필요하지 않습니다.",
       "deleting": "삭제 중…",
       "delete": "삭제",
-
       "toastLoadFailed": "템플릿을 불러오지 못했습니다",
       "toastSubmitFailed": "제출하지 못했습니다",
       "toastSubmitEditSuccess": "수정 사항이 제출되었습니다 — Meta는 보통 24시간 이내에 검토합니다.",
@@ -1493,6 +1576,54 @@
       "step4_5": "\"messages\" 웹훅 필드를 구독",
       "metaDocs": "Meta WhatsApp API 문서"
     },
+    "whatsappSessions": {
+      "title": "WhatsApp 세션",
+      "description": "WhatsApp Web 번호를 연결하세요. 각 세션은 QR 코드를 스캔하여 연결되는 하나의 전화번호입니다. 이 세션을 통해 대화가 인박스로 들어옵니다.",
+      "newSession": "새 세션",
+      "createTitle": "세션 만들기",
+      "createDesc": "세션 이름을 지정한 후(사용하는 번호 또는 팀), 연결할 전화로 QR을 스캔하세요.",
+      "nameLabel": "세션 이름",
+      "namePlaceholder": "예: 지원 라인",
+      "nameRequired": "세션 이름을 입력하세요.",
+      "cancel": "취소",
+      "creating": "만드는 중…",
+      "create": "세션 만들기",
+      "created": "세션이 생성되었습니다 — 아래 QR을 스캔하세요.",
+      "createFailed": "세션을 만들 수 없습니다.",
+      "loading": "불러오는 중…",
+      "emptyTitle": "아직 세션이 없습니다",
+      "emptyDesc": "세션을 만들고 연결할 WhatsApp으로 QR을 스캔하세요 — 메시지가 인박스에 표시됩니다.",
+      "readOnlyTitle": "읽기 전용으로 보는 중",
+      "readOnlyDesc": "관리자만 세션을 만들거나 관리할 수 있습니다. 연결 상태는 여기서 확인할 수 있습니다.",
+      "reconnected": "재연결이 요청되었습니다.",
+      "disconnected": "세션이 연결 해제되었습니다.",
+      "deleted": "세션이 삭제되었습니다.",
+      "deleteConfirm": "이 세션을 삭제할까요? 연결이 제거되며 QR을 다시 스캔해야만 복원할 수 있습니다.",
+      "actionFailed": "세션을 업데이트할 수 없습니다.",
+      "qrHint": "연결할 전화의 WhatsApp에서 설정 → 연결된 기기 → 기기 연결하기를 연 뒤, 이 QR을 스캔하세요.",
+      "qrExpires": "QR 만료 {time}",
+      "lastActivity": "활동 {time}",
+      "neverActive": "아직 활동 없음",
+      "error": "오류: {error}",
+      "refreshQr": "QR 새로고침",
+      "reconnect": "재연결",
+      "disconnect": "연결 해제",
+      "delete": "삭제",
+      "status": {
+        "DISCONNECTED": "연결 해제됨",
+        "CONNECTING": "연결 중…",
+        "QR_CODE": "스캔 대기 중",
+        "CONNECTED": "연결됨",
+        "RECONNECTING": "재연결 중…",
+        "ERROR": "오류",
+        "BLOCKED": "차단됨"
+      }
+    },
+    "templatesPlaceholder": {
+      "description": "메타 메시지 템플릿은 공식 WhatsApp Business API용이며, 이 워크스페이스는 사용하지 않습니다. 재사용 답변은 빠른 답변에서 관리하세요.",
+      "title": "메시지 템플릿은 여기서 사용되지 않습니다",
+      "body": "대화는 WhatsApp Web(Baileys)을 통해 진행됩니다. 보내기는 항상 컴포저에서 수동으로 수행되며, 자주 쓰는 답변은 빠른 답변에서 관리합니다."
+    },
     "sections": {
       "overview": "개요",
       "profile": "내 프로필",
@@ -1537,7 +1668,6 @@
       "profileSaved": "프로필이 저장되었습니다",
       "emailChangeFailed": "이메일 변경 실패: {message}",
       "profileSavedEmailCheck": "프로필이 저장되었습니다 — 이메일 주소 변경을 확인하려면 이메일을 확인하세요",
-
       "passwordTitle": "비밀번호",
       "passwordDesc": "최소 {min}자 이상 사용하세요. 변경 후에도 이 기기에서는 로그인이 유지됩니다.",
       "currentPassword": "현재 비밀번호",
@@ -1551,7 +1681,6 @@
       "currentPasswordIncorrect": "현재 비밀번호가 올바르지 않습니다",
       "passwordUpdateFailed": "비밀번호 업데이트 실패: {message}",
       "passwordUpdated": "비밀번호가 업데이트되었습니다",
-
       "sessionsTitle": "활성 세션",
       "sessionsDesc": "이 기기를 포함해 로그인되어 있는 모든 기기에서 로그아웃합니다. 노트북을 분실했거나 비밀번호를 공유한 경우 유용합니다.",
       "signOutAll": "모든 기기에서 로그아웃",
@@ -1692,5 +1821,116 @@
       "reindexTooltip": "모든 문서를 다시 임베딩합니다 (예: 임베딩 키 추가 후)",
       "loading": "불러오는 중…"
     }
+  },
+  "Finance": {
+    "title": "재무",
+    "subtitle": "IPTV 운영의 현금 흐름, MRR, 수금 현황입니다.",
+    "balance": "잔액",
+    "balanceSub": "원장의 전체 순액",
+    "revenueToday": "오늘 수익",
+    "revenueTodaySub": "자정 이후 기록된 수입",
+    "revenue30d": "수익 (30일)",
+    "revenue30dSub": "최근 30일 수입",
+    "mrr": "MRR",
+    "mrrSub": "{arr} ARR",
+    "trend": "현금 흐름 추이",
+    "last6Months": "최근 6개월",
+    "revenueByCategory": "카테고리별 수익",
+    "noData": "아직 기록된 수입이 없습니다.",
+    "categorySale": "IPTV 판매",
+    "categoryRenewal": "갱신",
+    "categoryServer": "서버",
+    "categoryInternet": "인터넷",
+    "categoryMarketing": "마케팅",
+    "categorySalary": "급여",
+    "categoryTaxes": "세금",
+    "categoryOther": "기타",
+    "health": "수금 상태",
+    "avgTicket": "평균 결제액",
+    "openReceivables": "미결제 수금",
+    "delinquency": "연체율",
+    "arrears": "연체",
+    "arrearsSub": "연체된 결제 {count}건"
+  },
+  "Renewals": {
+    "title": "갱신",
+    "subtitle": "IPTV 갱신 일정 — 예정 결제, 확정, 기록입니다.",
+    "agendaTitle": "다가오는 갱신",
+    "agendaSub": "기한에 따라 그룹화된 결제입니다. 결제를 확정하면 자격 증명이 갱신됩니다.",
+    "registerPayment": "결제 등록",
+    "registerPaymentSub": "고객의 미수금을 등록합니다. 나중에 일정에서 확정할 수 있습니다.",
+    "noPermission": "결제를 관리하려면 상담원 이상 권한이 필요합니다.",
+    "contact": "고객",
+    "searchContact": "이름 또는 전화번호로 고객 검색…",
+    "noContacts": "연락처를 찾을 수 없습니다",
+    "amount": "금액",
+    "dueAt": "기한",
+    "methodLabel": "결제 방법",
+    "notes": "메모",
+    "cancel": "취소",
+    "save": "저장",
+    "saveError": "문제가 발생했습니다",
+    "paymentCreated": "결제가 등록되었습니다",
+    "confirmBtn": "결제 확정",
+    "confirmTitle": "결제 확정",
+    "confirmSub": "결제를 완료 처리하고 선택한 기간만큼 고객의 자격 증명을 갱신합니다.",
+    "duration": "갱신 기간",
+    "durationDefault": "현재 기간 유지",
+    "durationDays": "{count}일",
+    "durationHint": "고객이 활성 자격 증명을 가진 경우에만 적용됩니다.",
+    "renewalCompleted": "갱신이 완료되었습니다",
+    "emptyBucket": "항목 없음",
+    "history": "갱신 기록",
+    "emptyHistory": "아직 완료된 갱신이 없습니다.",
+    "expiresAt": "새 만료일",
+    "noContact": "알 수 없는 연락처",
+    "method": {
+      "pix": "Pix",
+      "cash": "현금",
+      "card": "카드",
+      "transfer": "송금",
+      "boleto": "Boleto",
+      "credit": "크레딧"
+    },
+    "status": {
+      "pending": "대기 중",
+      "paid": "결제 완료",
+      "late": "연체",
+      "canceled": "취소됨",
+      "refunded": "환불됨",
+      "partial": "부분"
+    },
+    "agenda": {
+      "overdue": "연체",
+      "today": "오늘 기한",
+      "tomorrow": "내일 기한",
+      "week": "이번 주 기한",
+      "month": "이번 달 기한"
+    },
+    "renewalType": {
+      "manual": "수동",
+      "automatic": "자동",
+      "promotional": "프로모션",
+      "courtesy": "우대"
+    }
+  },
+  "Clients": {
+    "title": "클라이언트",
+    "subtitle": "IPTV 자격 증명을 가진 모든 연락처를 한눈에 봅니다.",
+    "filterAll": "전체",
+    "filterActive": "활성",
+    "filterExpiring": "곧 만료",
+    "filterExpired": "만료됨",
+    "colContact": "연락처",
+    "colPhone": "전화",
+    "colUser": "사용자 이름",
+    "colExpiry": "만료일",
+    "colStatus": "상태",
+    "statusActive": "활성",
+    "statusExpiring": "곧 만료",
+    "statusExpired": "만료됨",
+    "statusNone": "자격 증명 없음",
+    "empty": "이 필터에 해당하는 클라이언트가 없습니다.",
+    "noName": "이름 없는 연락처"
   }
 }

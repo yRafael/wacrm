@@ -48,6 +48,11 @@
   --color-primary-hover: var(--primary-hover);
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-2: var(--primary-soft-2);
+  /* Marca Fire Play — chama de fogo (#FF6B1A → #FF3D00 → #FFB300).
+   * Mapeadas como bg-flame-1/2/3, text-flame-*, from-flame-* etc. */
+  --color-flame-1: var(--flame-1);
+  --color-flame-2: var(--flame-2);
+  --color-flame-3: var(--flame-3);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -88,32 +93,39 @@
 
 :root,
 html[data-mode="dark"] {
-  --background: oklch(0.13 0.01 260);
+  /* Fire Play "Dark Fire" — carvão-violeta (hue ~285) que casa com o
+   * fundo #0A0A0F / painéis #14141B e com o laranja do accent fire. */
+  --background: oklch(0.13 0.006 285);
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.18 0.01 260);
-  --card-2: oklch(0.205 0.01 260);
+  --card: oklch(0.175 0.008 285);
+  --card-2: oklch(0.2 0.008 285);
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.18 0.01 260);
+  --popover: oklch(0.21 0.008 285);
   --popover-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.22 0.01 260);
+  --secondary: oklch(0.22 0.008 285);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.22 0.01 260);
-  --muted-foreground: oklch(0.65 0.01 260);
-  --accent: oklch(0.22 0.01 260);
+  --muted: oklch(0.22 0.008 285);
+  --muted-foreground: oklch(0.65 0.01 285);
+  --accent: oklch(0.21 0.008 285);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.28 0.01 260);
-  --input: oklch(0.28 0.01 260);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --border: oklch(0.27 0.01 285);
+  --input: oklch(0.27 0.01 285);
+  /* Neutros quentes para séries (o accent fire sobrescreve chart-1/2). */
+  --chart-2: oklch(0.5 0.01 285);
+  --chart-3: oklch(0.43 0.01 285);
+  --chart-4: oklch(0.36 0.01 285);
+  --chart-5: oklch(0.3 0.01 285);
   --radius: 0.625rem;
-  --sidebar: oklch(0.16 0.01 260);
+  --sidebar: oklch(0.155 0.007 285);
   --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.22 0.01 260);
+  --sidebar-accent: oklch(0.21 0.008 285);
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.28 0.01 260);
+  --sidebar-border: oklch(0.27 0.01 285);
+  /* Marca Fire Play — chama (#FF6B1A), brasa (#FF3D00), brasa clara (#FFB300). */
+  --flame-1: oklch(0.72 0.19 40);
+  --flame-2: oklch(0.62 0.22 28);
+  --flame-3: oklch(0.85 0.17 85);
 }
 
 html[data-mode="light"] {
@@ -217,6 +229,22 @@ html[data-theme="rose"] {
   --sidebar-ring: oklch(0.645 0.22 16);
 }
 
+html[data-theme="fire"] {
+  /* Acento Fire Play — laranja de fogo (#FF6B1A ≈ oklch(0.70 0.19 40)),
+   * sincronizado com o token de marca --flame-1. */
+  --primary: oklch(0.7 0.19 40);
+  --primary-foreground: oklch(0.985 0 0);
+  --primary-hover: oklch(0.76 0.18 40);
+  --primary-soft: oklch(0.7 0.19 40 / 0.12);
+  --primary-soft-2: oklch(0.7 0.19 40 / 0.22);
+  --ring: oklch(0.7 0.19 40);
+  --chart-1: oklch(0.7 0.19 40);
+  --chart-2: oklch(0.78 0.15 65);
+  --sidebar-primary: oklch(0.7 0.19 40);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-ring: oklch(0.7 0.19 40);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -226,5 +254,110 @@ html[data-theme="rose"] {
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* ============================================================
+ * ANIMAÇÕES DA MARCA — Fire Play
+ *
+ * Chama tremulando, flutuação decorativa e brilho pulsante.
+ * Tudo respeita prefers-reduced-motion (a mídia abaixo zera a
+ * animação, deixando os estados finais estáveis).
+ * ============================================================ */
+
+@keyframes flame-flicker {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  25% {
+    transform: scale(1.025) rotate(-0.75deg);
+    opacity: 0.92;
+  }
+  50% {
+    transform: scale(0.985) rotate(0.5deg);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(1.015) rotate(-0.35deg);
+    opacity: 0.96;
+  }
+}
+
+@keyframes flame-sway {
+  0%,
+  100% {
+    transform: skewY(0deg) scaleY(1);
+  }
+  30% {
+    transform: skewY(0.6deg) scaleY(0.985);
+  }
+  70% {
+    transform: skewY(-0.6deg) scaleY(1.01);
+  }
+}
+
+@keyframes blink {
+  0%,
+  46%,
+  54%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.12);
+  }
+}
+
+@keyframes float-slow {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(3deg);
+  }
+}
+
+@keyframes glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 18px 2px var(--flame-1);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 30px 6px var(--flame-2);
+    opacity: 0.85;
+  }
+}
+
+@layer utilities {
+  .animate-flame-flicker {
+    animation: flame-flicker 3.2s ease-in-out infinite;
+    transform-origin: 50% 85%;
+  }
+  .animate-flame-sway {
+    animation: flame-sway 4.5s ease-in-out infinite;
+    transform-origin: 50% 100%;
+  }
+  .animate-blink {
+    animation: blink 4.6s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+  .animate-glow-pulse {
+    animation: glow-pulse 2.6s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-flame-flicker,
+  .animate-flame-sway,
+  .animate-blink,
+  .animate-float-slow,
+  .animate-glow-pulse {
+    animation: none;
   }
 }

@@ -42,3 +42,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# whatsapp baileys worker — on-disk session auth credentials
+/wa-sessions/
+
+# esbuild bundle output for the baileys worker (.mjs build artifact)
+/.wa/
+
+# local dev artifacts / reports
+/dev-smoke.log
+/lint-report.txt
+/test-report.txt
+
+# supabase CLI local state
+/supabase/.temp/
