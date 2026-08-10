@@ -21,9 +21,7 @@ import { useTranslations } from 'next-intl'
 import { formatCurrency } from '@/lib/currency'
 
 import { loadPulseMetrics } from '@/lib/pulse/queries'
-import type { PulseMetrics } from '@/lib/pulse/types'
 import { loadMetrics } from '@/lib/dashboard/queries'
-import type { MetricsBundle } from '@/lib/dashboard/types'
 import { revenueLastDays } from '@/lib/iptv/finance'
 import { buildBriefing } from '@/lib/dashboard/briefing'
 import type { Briefing } from '@/lib/dashboard/briefing'
@@ -72,17 +70,22 @@ export function FireHero() {
   const [briefing, setBriefing] = useState<Briefing | null>(null)
   const [loading, setLoading] = useState(true)
 
-  const loadAll = useCallback(async () => {
+  // Cadeia de .then() (não async/await): o setState fica dentro dos
+  // callbacks, fora do caminho da regra react-hooks/set-state-in-effect
+  // (mesmo padrão do dashboard/page.tsx). O retorno continua uma Promise,
+  // então os chamadores seguem usando void loadAll().catch(...).
+  const loadAll = useCallback(() => {
     const db = createClient()
-    const [pulse, metrics, txnsRes] = await Promise.all([
+    return Promise.all([
       loadPulseMetrics(db),
       loadMetrics(db),
       db.from('financial_transactions').select('amount, type, occurred_at'),
-    ])
-    const txns = (txnsRes.data ?? []) as FinancialTransaction[]
-    const weeklyRevenue = revenueLastDays(txns, new Date(), 7)
-    setBriefing(buildBriefing({ pulse, metrics, weeklyRevenue }, new Date().getHours()))
-    setLoading(false)
+    ]).then(([pulse, metrics, txnsRes]) => {
+      const txns = (txnsRes.data ?? []) as FinancialTransaction[]
+      const weeklyRevenue = revenueLastDays(txns, new Date(), 7)
+      setBriefing(buildBriefing({ pulse, metrics, weeklyRevenue }, new Date().getHours()))
+      setLoading(false)
+    })
   }, [])
 
   useEffect(() => {
