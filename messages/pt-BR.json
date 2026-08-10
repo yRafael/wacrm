@@ -19,6 +19,7 @@
     "dashboard": "Dashboard",
     "pulse": "🔥 Fire Pulse",
     "inbox": "Caixa de entrada",
+    "queue": "Fila de atendimento",
     "notifications": "Notificações",
     "contacts": "Contatos",
     "pipelines": "Pipelines",
@@ -86,6 +87,7 @@
   "Header": {
     "dashboard": "Dashboard",
     "inbox": "Caixa de entrada",
+    "queue": "Fila de atendimento",
     "notifications": "Notificações",
     "contacts": "Contatos",
     "pipelines": "Pipelines",
@@ -2011,5 +2013,23 @@
       "credential": "Credenciais",
       "renewal": "Renovações"
     }
+  },
+  "Queue": {
+    "title": "Fila de atendimento",
+    "description": "Conversas que precisam de atenção — ninguém assumiu ainda, ou o cliente está aguardando resposta.",
+    "unassignedTitle": "Sem responsável",
+    "unassignedEmpty": "Nenhuma conversa sem responsável",
+    "unassignedEmptyHint": "Novas mensagens de clientes caem aqui até um operador assumir.",
+    "waitingTitle": "Aguardando resposta",
+    "waitingEmpty": "Nada aguardando você",
+    "waitingEmptyHint": "Conversas assumidas com mensagem do cliente sem resposta aparecem aqui.",
+    "claim": "Assumir",
+    "claiming": "Assumindo…",
+    "claimed": "Conversa assumida",
+    "claimError": "Não foi possível assumir esta conversa",
+    "gateReason": "assumir conversas",
+    "open": "Abrir conversa",
+    "noMessages": "Nenhuma mensagem ainda",
+    "unnamedContact": "Contato sem nome"
   }
 }

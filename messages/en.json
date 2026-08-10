@@ -17,7 +17,9 @@
   "Sidebar": {
     "title": "CRM Template for WhatsApp",
     "dashboard": "Dashboard",
+    "pulse": "Pulse",
     "inbox": "Inbox",
+    "queue": "Queue",
     "notifications": "Notifications",
     "contacts": "Contacts",
     "pipelines": "Pipelines",
@@ -85,6 +87,7 @@
   "Header": {
     "dashboard": "Dashboard",
     "inbox": "Inbox",
+    "queue": "Queue",
     "notifications": "Notifications",
     "contacts": "Contacts",
     "pipelines": "Pipelines",
@@ -1951,5 +1954,23 @@
       "credential": "Credentials",
       "renewal": "Renewals"
     }
+  },
+  "Queue": {
+    "title": "Service Queue",
+    "description": "Conversations that need attention — no one has picked them up yet, or the customer is waiting for a reply.",
+    "unassignedTitle": "Unassigned",
+    "unassignedEmpty": "No unassigned conversations",
+    "unassignedEmptyHint": "New messages from customers land here until an agent picks them up.",
+    "waitingTitle": "Awaiting reply",
+    "waitingEmpty": "Nothing waiting on you",
+    "waitingEmptyHint": "Conversations assigned to an agent with an unanswered customer message show here.",
+    "claim": "Claim",
+    "claiming": "Claiming…",
+    "claimed": "Conversation claimed",
+    "claimError": "Couldn't claim this conversation",
+    "gateReason": "assumir conversas",
+    "open": "Open conversation",
+    "noMessages": "No messages yet",
+    "unnamedContact": "Unnamed contact"
   }
 }

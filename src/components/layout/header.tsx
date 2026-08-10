@@ -22,6 +22,7 @@ import { GlobalSearch } from "@/components/search/global-search";
 const pageTitles: Record<string, string> = {
   "/dashboard": "dashboard",
   "/inbox": "inbox",
+  "/queue": "queue",
   "/notifications": "notifications",
   "/contacts": "contacts",
   "/pipelines": "pipelines",

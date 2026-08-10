@@ -17,7 +17,9 @@
   "Sidebar": {
     "title": "WhatsApp용 CRM 템플릿",
     "dashboard": "대시보드",
+    "pulse": "펄스",
     "inbox": "인박스",
+    "queue": "대기열",
     "notifications": "알림",
     "contacts": "연락처",
     "pipelines": "파이프라인",
@@ -85,6 +87,7 @@
   "Header": {
     "dashboard": "대시보드",
     "inbox": "인박스",
+    "queue": "대기열",
     "notifications": "알림",
     "contacts": "연락처",
     "pipelines": "파이프라인",
@@ -1950,5 +1953,23 @@
       "credential": "자격 증명",
       "renewal": "갱신"
     }
+  },
+  "Queue": {
+    "title": "대기열",
+    "description": "주의가 필요한 대화 — 아직 아무도 맡지 않았거나 고객이 답변을 기다리고 있습니다.",
+    "unassignedTitle": "담당자 없음",
+    "unassignedEmpty": "담당자 없는 대화가 없습니다",
+    "unassignedEmptyHint": "새 고객 메시지는 상담원이 맡을 때까지 여기에 표시됩니다.",
+    "waitingTitle": "답변 대기",
+    "waitingEmpty": "대기 중인 것이 없습니다",
+    "waitingEmptyHint": "담당자가 배정됐지만 고객 메시지에 답하지 않은 대화가 여기에 표시됩니다.",
+    "claim": "맡기",
+    "claiming": "맡는 중…",
+    "claimed": "대화를 맡았습니다",
+    "claimError": "이 대화를 맡을 수 없습니다",
+    "gateReason": "assumir conversas",
+    "open": "대화 열기",
+    "noMessages": "아직 메시지가 없습니다",
+    "unnamedContact": "이름 없는 연락처"
   }
 }
