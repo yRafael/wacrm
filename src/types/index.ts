@@ -1,5 +1,5 @@
-import type { AccountRole } from "@/lib/auth/roles";
-import type { InteractiveMessagePayload } from "@/lib/whatsapp/interactive";
+import type { AccountRole } from '@/lib/auth/roles';
+import type { InteractiveMessagePayload } from '@/lib/whatsapp/interactive';
 
 export type {
   InteractiveMessagePayload,
@@ -8,7 +8,7 @@ export type {
   InteractiveButton,
   InteractiveListRow,
   InteractiveListSection,
-} from "@/lib/whatsapp/interactive";
+} from '@/lib/whatsapp/interactive';
 
 export interface Profile {
   id: string;
@@ -87,7 +87,7 @@ export interface AccountInvitation {
   id: string;
   account_id: string;
   /** Roles offered via invite — owner is never offered. */
-  role: Exclude<AccountRole, "owner">;
+  role: Exclude<AccountRole, 'owner'>;
   created_by_user_id: string | null;
   label: string | null;
   created_at: string;
@@ -225,7 +225,8 @@ export type ContentType =
   | 'template'
   /** Customer tapped a reply button or list row on a message we sent. */
   | 'interactive';
-export type MessageStatus = 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
+export type MessageStatus =
+  'sending' | 'sent' | 'delivered' | 'read' | 'failed';
 
 export interface Message {
   id: string;
@@ -387,8 +388,10 @@ export interface Deal {
   assignee?: Profile;
 }
 
-export type BroadcastStatus = 'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
-export type RecipientStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'replied' | 'failed';
+export type BroadcastStatus =
+  'draft' | 'scheduled' | 'sending' | 'sent' | 'failed';
+export type RecipientStatus =
+  'pending' | 'sent' | 'delivered' | 'read' | 'replied' | 'failed';
 
 export interface Broadcast {
   id: string;
@@ -549,10 +552,7 @@ export interface WaitStepConfig {
 }
 
 export type ConditionSubject =
-  | 'contact_field'
-  | 'tag_presence'
-  | 'message_content'
-  | 'time_of_day';
+  'contact_field' | 'tag_presence' | 'message_content' | 'time_of_day';
 
 export interface ConditionStepConfig {
   subject: ConditionSubject;
@@ -663,6 +663,38 @@ export interface QuickReply {
 export type PanelType = 'sigma' | 'xtream' | 'xui' | 'horus' | 'generic';
 export type IptvCredentialStatus = 'active' | 'expired' | 'revoked';
 
+// ============================================================
+// Company plan + server catalog (migration 043) — the operational
+// panel. Multi-tenant: every row carries account_id and is scoped by
+// is_account_member, so "Rafael é um usuário da empresa Vision" — the
+// catalog João/Maria/Carlos see is their own company's.
+// ============================================================
+
+export interface Plan {
+  id: string;
+  account_id: string;
+  /** Display name, e.g. "Mensal". Unique per account. */
+  name: string;
+  /** Subscription span in days (30/90/180/365) — the renewal span. */
+  duration_days: number;
+  /** Suggested price for the payment/renewal dialogs; NULL when unset. */
+  price?: number | null;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Server {
+  id: string;
+  account_id: string;
+  name: string;
+  is_active: boolean;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IptvCredential {
   id: string;
   account_id: string;
@@ -684,14 +716,22 @@ export interface IptvCredential {
   created_at: string;
   updated_at: string;
   deleted_at?: string | null;
+  /** Company catalog refs (043). Nullable — pre-043 credentials stay valid. */
+  plan_id?: string | null;
+  server_id?: string | null;
+  /** Hydrated by queries that embed `plan:plans(*)` / `server:servers(*)`. */
+  plan?: Plan;
+  server?: Server;
 }
 
 // ============================================================
 // Finance + renewals (migration 040) — Fase 3
 // ============================================================
 
-export type PaymentMethod = 'pix' | 'cash' | 'card' | 'transfer' | 'boleto' | 'credit';
-export type PaymentStatus = 'pending' | 'paid' | 'late' | 'canceled' | 'refunded' | 'partial';
+export type PaymentMethod =
+  'pix' | 'cash' | 'card' | 'transfer' | 'boleto' | 'credit';
+export type PaymentStatus =
+  'pending' | 'paid' | 'late' | 'canceled' | 'refunded' | 'partial';
 
 /** A receivable ("conta a receber") — scheduled/pending renewal the customer owes. */
 export interface Payment {
@@ -710,7 +750,8 @@ export interface Payment {
   contact?: Contact;
 }
 
-export type FinancialTransactionType = 'income' | 'expense' | 'transfer' | 'adjustment' | 'refund';
+export type FinancialTransactionType =
+  'income' | 'expense' | 'transfer' | 'adjustment' | 'refund';
 export type FinancialCategory =
   | 'sale'
   | 'renewal'
@@ -742,7 +783,8 @@ export interface FinancialTransaction {
 }
 
 export type RenewalType = 'manual' | 'automatic' | 'promotional' | 'courtesy';
-export type RenewalStatus = 'scheduled' | 'pending' | 'paid' | 'renewed' | 'canceled' | 'expired';
+export type RenewalStatus =
+  'scheduled' | 'pending' | 'paid' | 'renewed' | 'canceled' | 'expired';
 
 /** Immutable renewal history — one row per completed renewal, old→new expiry. */
 export interface Renewal {
