@@ -39,22 +39,36 @@ function single<T>(rel: T | T[] | null): T | null {
 }
 
 /**
- * The four headline numbers + their supporting counts. Each count is
- * a `count: 'exact', head: true` query so Supabase returns a cheap
- * aggregate row instead of a full dataset.
+ * The four headline numbers + the item-23 metric groups (Atendimento /
+ * Clientes / Financeiro). Counts stay `count: 'exact', head: true` so
+ * Supabase returns a cheap aggregate row instead of a full dataset; the
+ * few metrics that need real values (waiting time, distinct clients,
+ * month money) fetch only the columns they reduce over.
  */
 export async function loadPulseMetrics(db: DB): Promise<PulseMetrics> {
   const today = boundaryISO(0);
   const tomorrow = boundaryISO(1);
   const dayAfter = boundaryISO(2);
+  // 7 days out — the "próximos do vencimento" window (matches expiryStatus).
+  const week = boundaryISO(7);
+  // Current local month — the window for novos clientes / vendas / renovações.
+  const monthStart = startOfLocalDay();
+  monthStart.setDate(1);
+  const monthStartISO = monthStart.toISOString();
+  const nowMs = Date.now();
 
   const [
     atendimento,
     atendimentoAguardando,
+    waitingConvs,
     renovacoesHoje,
     vencendoHoje,
     vencendoAmanha,
     vencendoAtrasadas,
+    credsRes,
+    incomeRes,
+    paidPaymentsRes,
+    renovacoesMes,
   ] = await Promise.all([
     db
       .from('conversations')
@@ -63,6 +77,11 @@ export async function loadPulseMetrics(db: DB): Promise<PulseMetrics> {
     db
       .from('conversations')
       .select('id', { count: 'exact', head: true })
+      .eq('status', 'open')
+      .gt('unread_count', 0),
+    db
+      .from('conversations')
+      .select('last_message_at, updated_at, created_at')
       .eq('status', 'open')
       .gt('unread_count', 0),
     db
@@ -86,15 +105,119 @@ export async function loadPulseMetrics(db: DB): Promise<PulseMetrics> {
       .select('id', { count: 'exact', head: true })
       .eq('status', 'active')
       .lt('expires_at', today),
+    // All current credentials — one query feeds the four Clientes buckets
+    // (kept per-contact via the same "most recent credential" rule that
+    // getClientStats uses, so Pulse and the Cliente badge can't disagree).
+    db
+      .from('iptv_credentials')
+      .select('contact_id, expires_at, created_at')
+      .is('deleted_at', null),
+    // This month's ledger income — the same revenue definition as Finance.
+    db
+      .from('financial_transactions')
+      .select('amount, occurred_at')
+      .eq('type', 'income')
+      .gte('occurred_at', monthStartISO),
+    // Paid payments (amounts) — valor recebido + ticket médio in one pass.
+    db
+      .from('payments')
+      .select('amount, paid_at')
+      .eq('status', 'paid'),
+    db
+      .from('renewals')
+      .select('id', { count: 'exact', head: true })
+      .gte('created_at', monthStartISO),
   ]);
+
+  // Tempo médio aguardando (min): average time since the last message on
+  // conversations waiting on the customer. Falls back to updated/created
+  // when last_message_at is missing, like the queue's recency helper.
+  let tempoTotalMs = 0;
+  let waitingCount = 0;
+  for (const row of (waitingConvs.data ?? []) as Array<{
+    last_message_at: string | null;
+    updated_at: string;
+    created_at: string;
+  }>) {
+    const ts = row.last_message_at ?? row.updated_at ?? row.created_at;
+    const t = new Date(ts).getTime();
+    if (Number.isNaN(t)) continue;
+    tempoTotalMs += nowMs - t;
+    waitingCount += 1;
+  }
+  const tempoMedioAguardando =
+    waitingCount === 0 ? 0 : Math.round(tempoTotalMs / waitingCount / 60000);
+
+  // Clientes — bucket each contact's most recent credential. A credential
+  // is "ativo" while still valid; "próximo" is a subset (within 7 days).
+  const latestByContact = new Map<
+    string,
+    { expires_at: string; created_at: string }
+  >();
+  for (const row of (credsRes.data ?? []) as Array<{
+    contact_id: string;
+    expires_at: string;
+    created_at: string;
+  }>) {
+    const prev = latestByContact.get(row.contact_id);
+    if (!prev || row.created_at > prev.created_at) {
+      latestByContact.set(row.contact_id, {
+        expires_at: row.expires_at,
+        created_at: row.created_at,
+      });
+    }
+  }
+  let clientesAtivos = 0;
+  let clientesVencidos = 0;
+  let clientesProximos = 0;
+  let novosClientes = 0;
+  for (const cred of latestByContact.values()) {
+    if (cred.expires_at < today) {
+      clientesVencidos += 1;
+    } else {
+      clientesAtivos += 1;
+      if (cred.expires_at < week) clientesProximos += 1;
+    }
+    if (cred.created_at >= monthStartISO) novosClientes += 1;
+  }
+
+  // Financeiro — vendas do mês is the ledger income booked this month;
+  // valor recebido is paid payments received this month; ticket médio is
+  // the mean of all paid payments (identical to FinanceOverview's).
+  let vendasDoMes = 0;
+  for (const row of (incomeRes.data ?? []) as Array<{ amount: number }>) {
+    vendasDoMes += row.amount;
+  }
+  let valorRecebido = 0;
+  let ticketTotal = 0;
+  let paidCount = 0;
+  for (const row of (paidPaymentsRes.data ?? []) as Array<{
+    amount: number;
+    paid_at: string | null;
+  }>) {
+    if (row.paid_at && row.paid_at >= monthStartISO) valorRecebido += row.amount;
+    ticketTotal += row.amount;
+    paidCount += 1;
+  }
 
   return {
     atendimento: atendimento.count ?? 0,
     atendimentoAguardando: atendimentoAguardando.count ?? 0,
+    tempoMedioAguardando,
+    atendimentosEmAndamento:
+      (atendimento.count ?? 0) - (atendimentoAguardando.count ?? 0),
     renovacoesHoje: renovacoesHoje.count ?? 0,
     vencendoHoje: vencendoHoje.count ?? 0,
     vencendoAmanha: vencendoAmanha.count ?? 0,
     vencendoAtrasadas: vencendoAtrasadas.count ?? 0,
+    clientesAtivos,
+    novosClientes,
+    clientesVencidos,
+    clientesProximos,
+    vendasDoMes,
+    valorRecebido,
+    renovacoesMes: renovacoesMes.count ?? 0,
+    ticketMedio: paidCount === 0 ? 0 : ticketTotal / paidCount,
   };
 }
 

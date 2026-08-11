@@ -15,10 +15,24 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import {
   AlertTriangle,
+  CalendarClock,
   Clock3,
+  Headphones,
+  Hourglass,
+  Inbox,
   MessageSquare,
+  MessageSquareText,
+  Receipt,
   RefreshCw,
+  TrendingUp,
+  UserPlus,
+  Users,
+  UserX,
+  Wallet,
 } from 'lucide-react'
+
+import { formatCurrency } from '@/lib/currency'
+import { useAuth } from '@/hooks/use-auth'
 
 import {
   loadOperators,
@@ -58,6 +72,7 @@ const RELOAD_DEBOUNCE_MS = 800
 export default function PulsePage() {
   const t = useTranslations('Pulse')
   const unreadAlerts = useUnreadNotifications()
+  const { defaultCurrency } = useAuth()
   // Debounce timer for the Realtime coalescing effect below.
   const reloadTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -181,6 +196,126 @@ export default function PulsePage() {
           </>
         )}
       </div>
+
+      {/* Item 23 — the three metric groups (Atendimento · Clientes · Financeiro) */}
+      <section className="space-y-4">
+        <h2 className="text-lg font-semibold text-foreground">
+          {t('metricGroups.title')}
+        </h2>
+
+        {/* Atendimento */}
+        <section>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t('metricGroups.atendimento')}
+          </h3>
+          <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {metricsLoading || !metrics ? (
+              Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+            ) : (
+              <>
+                <MetricCard
+                  title={t('metrics.atendimentoConversas')}
+                  value={metrics.atendimento.toLocaleString()}
+                  icon={Inbox}
+                />
+                <MetricCard
+                  title={t('metrics.atendimentoNaoRespondidas')}
+                  value={metrics.atendimentoAguardando.toLocaleString()}
+                  icon={MessageSquareText}
+                />
+                <MetricCard
+                  title={t('metrics.tempoMedio')}
+                  value={`${metrics.tempoMedioAguardando.toLocaleString()} ${t(
+                    'metrics.tempoMedioUnit',
+                  )}`}
+                  icon={Hourglass}
+                />
+                <MetricCard
+                  title={t('metrics.atendimentoAndamento')}
+                  value={metrics.atendimentosEmAndamento.toLocaleString()}
+                  icon={Headphones}
+                />
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Clientes */}
+        <section>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t('metricGroups.clientes')}
+          </h3>
+          <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {metricsLoading || !metrics ? (
+              Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+            ) : (
+              <>
+                <MetricCard
+                  title={t('metrics.clientesAtivos')}
+                  value={metrics.clientesAtivos.toLocaleString()}
+                  icon={Users}
+                />
+                <MetricCard
+                  title={t('metrics.clientesNovos')}
+                  value={metrics.novosClientes.toLocaleString()}
+                  icon={UserPlus}
+                  subtitle={t('metrics.clientesNovosSub')}
+                />
+                <MetricCard
+                  title={t('metrics.clientesVencidos')}
+                  value={metrics.clientesVencidos.toLocaleString()}
+                  icon={UserX}
+                />
+                <MetricCard
+                  title={t('metrics.clientesProximos')}
+                  value={metrics.clientesProximos.toLocaleString()}
+                  icon={CalendarClock}
+                  subtitle={t('metrics.clientesProximosSub')}
+                />
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Financeiro */}
+        <section>
+          <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            {t('metricGroups.financeiro')}
+          </h3>
+          <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {metricsLoading || !metrics ? (
+              Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
+            ) : (
+              <>
+                <MetricCard
+                  title={t('metrics.vendasMes')}
+                  value={formatCurrency(metrics.vendasDoMes, defaultCurrency)}
+                  icon={TrendingUp}
+                  subtitle={t('metrics.vendasMesSub')}
+                />
+                <MetricCard
+                  title={t('metrics.valorRecebido')}
+                  value={formatCurrency(metrics.valorRecebido, defaultCurrency)}
+                  icon={Wallet}
+                  subtitle={t('metrics.valorRecebidoSub')}
+                />
+                <MetricCard
+                  title={t('metrics.renovacoesMes')}
+                  value={metrics.renovacoesMes.toLocaleString()}
+                  icon={RefreshCw}
+                  subtitle={t('metrics.renovacoesMesSub')}
+                />
+                <MetricCard
+                  title={t('metrics.ticketMedio')}
+                  value={formatCurrency(metrics.ticketMedio, defaultCurrency)}
+                  icon={Receipt}
+                  subtitle={t('metrics.ticketMedioSub')}
+                />
+              </>
+            )}
+          </div>
+        </section>
+      </section>
 
       {/* 🔴 Vencendo hoje · 🟡 Aguardando pagamento */}
       <PrioritiesPanel priorities={priorities} loading={prioritiesLoading} />

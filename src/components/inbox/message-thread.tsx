@@ -39,6 +39,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { getClientStats, type ClientStats } from "@/lib/iptv/client-stats";
 import { MessageBubble } from "./message-bubble";
 import { MessageActions } from "./message-actions";
 import {
@@ -172,9 +173,12 @@ export function MessageThread({
   const tTimer = useTranslations("Inbox.sessionTimer");
   const tQuote = useTranslations("Inbox.replyQuote");
 
-  const { user } = useAuth();
+  const { user, accountId } = useAuth();
   const { getPresence, getRow, now } = usePresence();
   const [loading, setLoading] = useState(false);
+  // Client stats drive the header pills (Cliente/Lead + "Vence em N
+  // dias"). Same aggregation as the subscription card / Perfil 360°.
+  const [stats, setStats] = useState<ClientStats | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -225,6 +229,25 @@ export function MessageThread({
       cancelled = true;
     };
   }, []);
+
+  // Client stats for the header pills — refetch whenever the thread's
+  // contact changes. Deliberately NOT keyed to resyncToken: this is a
+  // 5-query aggregation and a tab-focus/reconnect resync doesn't need a
+  // fresh copy (the contact didn't move), it would just add load.
+  useEffect(() => {
+    if (!conversation?.contact_id || !accountId) {
+      setStats(null);
+      return;
+    }
+    const supabase = createClient();
+    let cancelled = false;
+    getClientStats(supabase, accountId, conversation.contact_id).then((s) => {
+      if (!cancelled) setStats(s);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [conversation?.contact_id, accountId]);
 
   // 24-hour session timer
   const sessionInfo = useMemo(() => {
@@ -899,7 +922,41 @@ export function MessageThread({
           </div>
           <div className="min-w-0">
             <h2 className="truncate text-sm font-semibold text-foreground">{displayName}</h2>
-            <p className="truncate text-xs text-muted-foreground">{contact.phone}</p>
+            <p className="flex items-center gap-1.5 truncate text-xs text-muted-foreground">
+              <span className="truncate">{contact.phone}</span>
+              {/* Cliente/Lead + vencimento pills — the subscription state
+                  at a glance, driven by the same stats as the sidebar. */}
+              {stats && (
+                <>
+                  <span
+                    className={cn(
+                      "shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium",
+                      stats.status !== "none"
+                        ? "bg-primary/10 text-primary"
+                        : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {stats.status !== "none" ? t("pillClient") : t("pillLead")}
+                  </span>
+                  {stats.credential &&
+                    stats.status === "expired" &&
+                    stats.daysUntilExpiry !== null && (
+                      <span className="shrink-0 rounded-full bg-red-500/10 px-1.5 py-px text-[10px] font-medium text-red-500">
+                        {t("pillExpiredDays", {
+                          days: Math.abs(stats.daysUntilExpiry),
+                        })}
+                      </span>
+                    )}
+                  {stats.credential &&
+                    stats.status === "expiring_soon" &&
+                    stats.daysUntilExpiry !== null && (
+                      <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-px text-[10px] font-medium text-amber-500">
+                        {t("pillExpiresIn", { days: stats.daysUntilExpiry })}
+                      </span>
+                    )}
+                </>
+              )}
+            </p>
           </div>
           {/* Session timer badge — hidden on the narrowest phones so
               the name + back arrow keep their room. */}

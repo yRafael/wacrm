@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/hooks/use-auth";
+import { getClientStats, type ClientStats } from "@/lib/iptv/client-stats";
 import { cn } from "@/lib/utils";
 import type { Contact, Deal, ContactNote, Tag } from "@/types";
+import { SubscriptionCard } from "./subscription-card";
 import {
   Phone,
   Mail,
@@ -29,11 +31,12 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
   const tSidebar = useTranslations("Inbox.sidebar");
   const tThread = useTranslations("Inbox.messageThread");
 
-  const { accountId } = useAuth();
+  const { accountId, defaultCurrency } = useAuth();
   const [copied, setCopied] = useState(false);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [notes, setNotes] = useState<ContactNote[]>([]);
   const [tags, setTags] = useState<(Tag & { contact_tag_id: string })[]>([]);
+  const [stats, setStats] = useState<ClientStats | null>(null);
   const [newNote, setNewNote] = useState("");
   const [addingNote, setAddingNote] = useState(false);
 
@@ -42,8 +45,8 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
 
     const supabase = createClient();
 
-    // Fetch deals, notes, and tags in parallel
-    const [dealsRes, notesRes, tagsRes] = await Promise.all([
+    // Fetch deals, notes, tags, and client stats in parallel
+    const [dealsRes, notesRes, tagsRes, statsRes] = await Promise.all([
       supabase
         .from("deals")
         .select("*, stage:pipeline_stages(*)")
@@ -58,6 +61,9 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
         .from("contact_tags")
         .select("id, tag_id, tags(*)")
         .eq("contact_id", contact.id),
+      accountId
+        ? getClientStats(supabase, accountId, contact.id)
+        : Promise.resolve(null),
     ]);
 
     if (dealsRes.data) setDeals(dealsRes.data);
@@ -71,7 +77,8 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
         }));
       setTags(mapped);
     }
-  }, [contact]);
+    if (statsRes) setStats(statsRes);
+  }, [contact, accountId]);
 
   // Load on contact change. setContactData/setTags run inside async
   // Supabase callbacks, not synchronously in the effect body.
@@ -177,6 +184,14 @@ export function ContactSidebar({ contact }: ContactSidebarProps) {
               </div>
             )}
           </div>
+
+          {/* Divider */}
+          <div className="my-4 border-t border-border" />
+
+          {/* Subscription (Cap. 7) — the account summary the agent needs
+              at a glance while talking: product, plan, value, last
+              payment, expiry, status. Data comes from getClientStats. */}
+          <SubscriptionCard stats={stats} currency={defaultCurrency} />
 
           {/* Divider */}
           <div className="my-4 border-t border-border" />

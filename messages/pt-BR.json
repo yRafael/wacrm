@@ -30,6 +30,7 @@
     "clients": "Clientes",
     "renewals": "Renovações",
     "finance": "Financeiro",
+    "reports": "Relatórios",
     "parser": "Parser de IPTV",
     "settings": "Configurações",
     "beta": "Beta",
@@ -93,6 +94,7 @@
     "pipelines": "Pipelines",
     "broadcasts": "Campanhas",
     "automations": "Automações",
+    "reports": "Relatórios",
     "settings": "Configurações",
     "openMenu": "Abrir menu",
     "openAccountMenu": "Abrir menu da conta",
@@ -213,7 +215,13 @@
       "clearAll": "Limpar tudo",
       "noConversations": "Nenhuma conversa encontrada",
       "noMessagesYet": "Nenhuma mensagem ainda",
-      "unknown": "Desconhecido"
+      "unknown": "Desconhecido",
+      "badgeClient": "Cliente",
+      "badgeLead": "Lead",
+      "badgeExpired": "Vencido",
+      "badgeExpiringSoon": "Vence em breve",
+      "badgeUnassigned": "Aguardando",
+      "badgeWaiting": "Resposta aguardada"
     },
     "messageThread": {
       "backToConversations": "Voltar para conversas",
@@ -237,7 +245,11 @@
       "selectConversation": "Selecione uma conversa",
       "selectConversationHint": "Escolha uma conversa à esquerda para começar a conversar",
       "today": "Hoje",
-      "yesterday": "Ontem"
+      "yesterday": "Ontem",
+      "pillClient": "Cliente",
+      "pillLead": "Lead",
+      "pillExpiredDays": "Vencido há {days} dias",
+      "pillExpiresIn": "Vence em {days} dias"
     },
     "sessionTimer": {
       "expired": "Expirada",
@@ -333,6 +345,19 @@
       "noTags": "Sem tags",
       "noDeals": "Sem negócios",
       "addNotePlaceholder": "Adicionar uma observação..."
+    },
+    "subscription": {
+      "title": "Assinatura",
+      "none": "Sem assinatura ativa",
+      "product": "Produto",
+      "plan": "Plano",
+      "value": "Valor",
+      "lastPayment": "Último pagamento",
+      "expiry": "Vencimento",
+      "statusActive": "Ativo",
+      "statusExpiringSoon": "Vence em breve",
+      "statusExpired": "Vencido",
+      "statusNone": "Sem assinatura"
     },
     "aiBanner": {
       "pausedTitle": "O assistente de IA está pausado aqui",
@@ -1949,7 +1974,32 @@
       "vencendoTomorrow": "{count, plural, =1 {1 amanhã} other {# amanhã}}",
       "vencendoOverdue": "{count, plural, =1 {1 atrasado} other {# atrasados}}",
       "alertas": "Alertas",
-      "alertasSubtitle": "sem ler"
+      "alertasSubtitle": "sem ler",
+      "atendimentoConversas": "Conversas abertas",
+      "atendimentoNaoRespondidas": "Não respondidas",
+      "tempoMedio": "Tempo médio aguardando",
+      "tempoMedioUnit": "min",
+      "atendimentoAndamento": "Em andamento",
+      "clientesAtivos": "Clientes ativos",
+      "clientesNovos": "Novos clientes",
+      "clientesNovosSub": "este mês",
+      "clientesVencidos": "Vencidos",
+      "clientesProximos": "Próximos do vencimento",
+      "clientesProximosSub": "em até 7 dias",
+      "vendasMes": "Vendas do mês",
+      "vendasMesSub": "faturado no mês",
+      "valorRecebido": "Valor recebido",
+      "valorRecebidoSub": "pagos no mês",
+      "renovacoesMes": "Renovações",
+      "renovacoesMesSub": "no mês",
+      "ticketMedio": "Ticket médio",
+      "ticketMedioSub": "por pagamento"
+    },
+    "metricGroups": {
+      "title": "Métricas do Fire Pulse",
+      "atendimento": "Atendimento",
+      "clientes": "Clientes",
+      "financeiro": "Financeiro"
     },
     "priorities": {
       "dueToday": "Vencendo hoje",
@@ -2031,5 +2081,38 @@
     "open": "Abrir conversa",
     "noMessages": "Nenhuma mensagem ainda",
     "unnamedContact": "Contato sem nome"
+  },
+  "Reports": {
+    "title": "Relatórios",
+    "subtitle": "Vendas, principais clientes, renovações e recebíveis — exportáveis em CSV.",
+    "tabSales": "Vendas",
+    "tabClients": "Principais clientes",
+    "tabRenewals": "Renovações",
+    "tabReceivables": "Recebíveis",
+    "period": "Período",
+    "period30": "30 dias",
+    "period90": "90 dias",
+    "period12m": "12 meses",
+    "month": "Mês",
+    "revenue": "Receita",
+    "expenses": "Despesas",
+    "net": "Líquido",
+    "cashFlowTrend": "Tendência de fluxo de caixa",
+    "monthsCount": "{count} {count, plural, =1 {mês} other {meses}}",
+    "totalRevenue": "Receita total",
+    "avgTicket": "Ticket médio",
+    "mrr": "MRR",
+    "arr": "ARR",
+    "rank": "#",
+    "client": "Cliente",
+    "pctOfTotal": "% do total",
+    "date": "Data",
+    "type": "Tipo",
+    "status": "Status",
+    "exportCsv": "Exportar CSV",
+    "clientsHint": "Top 10 clientes por receita acumulada.",
+    "emptyClients": "Nenhuma receita registrada ainda.",
+    "emptyRenewals": "Nenhuma renovação registrada ainda.",
+    "emptyReceivables": "Nenhum recebível em aberto."
   }
 }

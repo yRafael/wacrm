@@ -16,10 +16,20 @@ function pulse(overrides: Partial<PulseMetrics> = {}): PulseMetrics {
   return {
     atendimento: 4,
     atendimentoAguardando: 0,
+    tempoMedioAguardando: 0,
+    atendimentosEmAndamento: 4,
     renovacoesHoje: 0,
     vencendoHoje: 0,
     vencendoAmanha: 2,
     vencendoAtrasadas: 0,
+    clientesAtivos: 0,
+    novosClientes: 0,
+    clientesVencidos: 0,
+    clientesProximos: 0,
+    vendasDoMes: 0,
+    valorRecebido: 0,
+    renovacoesMes: 0,
+    ticketMedio: 0,
     ...overrides,
   };
 }

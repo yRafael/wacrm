@@ -7,9 +7,14 @@ import {
   matchesContactFilters,
   normalizeConversations,
 } from "@/lib/inbox/conversations";
+import {
+  awaitingBucket,
+  conversationExpiry,
+  conversationKind,
+} from "@/lib/inbox/conversation-meta";
 import { cn } from "@/lib/utils";
-import type { Conversation, ConversationStatus, Tag } from "@/types";
-import { Search, ChevronDown, X } from "lucide-react";
+import type { Conversation, ConversationStatus, IptvCredential, Tag } from "@/types";
+import { Search, ChevronDown, Clock3, X } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
@@ -72,6 +77,14 @@ export function ConversationList({
   const [tags, setTags] = useState<Tag[]>([]);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+
+  // The most recent non-deleted credential per contact id, for the
+  // Cliente/Lead + vencimento badges on each row. Fetched in one extra
+  // query (like the clients table) rather than per-conversation embeds,
+  // and refreshed alongside the list via `resyncToken`.
+  const [credentialByContact, setCredentialByContact] = useState<
+    Map<string, IptvCredential>
+  >(new Map());
 
   // Keep the latest callback in a ref so the fetch effect below can
   // have a stable, empty-dep identity. Previously the fetch useCallback
@@ -139,6 +152,59 @@ export function ConversationList({
       cancelled = true;
     };
   }, []);
+
+  // Load the latest credential per contact so each row can show the
+  // Cliente/Lead + vencimento badges. Runs on `conversations` change
+  // like the list fetch (the same array the list renders), plus on
+  // resyncToken reconnect so missed events catch up. Non-deleted rows
+  // only, first-by-contact (created_at desc) so the map holds the most
+  // recent credential for each contact.
+  useEffect(() => {
+    const contactIds = Array.from(
+      new Set(
+        conversations
+          .map((c) => c.contact?.id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+    // No contacts loaded (nothing to badge) — leave the map as-is
+    // rather than clearing synchronously inside the effect body.
+    if (contactIds.length === 0) return;
+
+    const supabase = createClient();
+    let cancelled = false;
+
+    (async () => {
+      const { data, error } = await supabase
+        .from("iptv_credentials")
+        .select("*")
+        .is("deleted_at", null)
+        .in("contact_id", contactIds)
+        .order("created_at", { ascending: false });
+
+      if (cancelled) return;
+
+      if (error) {
+        console.error("Failed to fetch credentials:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+        return;
+      }
+
+      const map = new Map<string, IptvCredential>();
+      for (const cred of (data as IptvCredential[]) ?? []) {
+        if (!map.has(cred.contact_id)) map.set(cred.contact_id, cred);
+      }
+      setCredentialByContact(map);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversations, resyncToken]);
 
   // Company options are derived from the loaded conversations — there's no
   // separate companies table, and only companies with a live conversation
@@ -411,6 +477,7 @@ export function ConversationList({
               <ConversationItem
                 key={conv.id}
                 conversation={conv}
+                credential={credentialByContact.get(conv.contact_id)}
                 isActive={conv.id === activeConversationId}
                 onSelect={handleSelect}
                 t={t}
@@ -425,6 +492,7 @@ export function ConversationList({
 
 interface ConversationItemProps {
   conversation: Conversation;
+  credential?: IptvCredential | null;
   isActive: boolean;
   onSelect: (conversation: Conversation) => void;
   t: ReturnType<typeof useTranslations>;
@@ -432,6 +500,7 @@ interface ConversationItemProps {
 
 function ConversationItem({
   conversation,
+  credential,
   isActive,
   onSelect,
   t,
@@ -449,6 +518,11 @@ function ConversationItem({
         addSuffix: false,
       })
     : "";
+
+  // Row badges (Cap. 6): Cliente/Lead + vencimento + aguardando.
+  const kind = conversationKind(credential);
+  const expiry = conversationExpiry(credential, new Date());
+  const awaiting = awaitingBucket(conversation);
 
   return (
     <button
@@ -498,6 +572,43 @@ function ConversationItem({
             />
           </div>
         </div>
+        {/* Indicator badges — only render when there's something to say. */}
+        {(credential || awaiting === "unassigned") && (
+          <div className="mt-1 flex flex-wrap items-center gap-1">
+            <span
+              className={cn(
+                "rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+                kind === "client"
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground"
+              )}
+            >
+              {kind === "client" ? t("badgeClient") : t("badgeLead")}
+            </span>
+            {credential && expiry === "expired" && (
+              <span className="rounded-full bg-red-500/10 px-1.5 py-0.5 text-[10px] font-medium text-red-500">
+                {t("badgeExpired")}
+              </span>
+            )}
+            {credential && expiry === "expiring_soon" && (
+              <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-500">
+                {t("badgeExpiringSoon")}
+              </span>
+            )}
+            {awaiting === "unassigned" && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-400">
+                <Clock3 className="h-2.5 w-2.5" />
+                {t("badgeUnassigned")}
+              </span>
+            )}
+            {awaiting === "waiting" && (
+              <span className="inline-flex items-center gap-0.5 rounded-full bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-400">
+                <Clock3 className="h-2.5 w-2.5" />
+                {t("badgeWaiting")}
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </button>
   );

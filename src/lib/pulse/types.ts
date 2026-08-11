@@ -12,6 +12,10 @@ export interface PulseMetrics {
   atendimento: number;
   /** Of those, how many have an unread customer message waiting. */
   atendimentoAguardando: number;
+  /** Average minutes a waiting customer has been waiting, rounded. */
+  tempoMedioAguardando: number;
+  /** Open conversations NOT waiting on the customer (agent mid-answer). */
+  atendimentosEmAndamento: number;
   /** Completed renewals created today (renewals.created_at in local day). */
   renovacoesHoje: number;
   /** Active credentials whose expiry lands today (local day). */
@@ -20,6 +24,22 @@ export interface PulseMetrics {
   vencendoAmanha: number;
   /** Active credentials already past their expiry date. */
   vencendoAtrasadas: number;
+  /** Distinct contacts with a current credential expiring today or later. */
+  clientesAtivos: number;
+  /** Distinct contacts whose latest credential was created this local month. */
+  novosClientes: number;
+  /** Distinct contacts with a credential already past its expiry. */
+  clientesVencidos: number;
+  /** Distinct contacts with a credential expiring within 7 days. */
+  clientesProximos: number;
+  /** Income booked in the ledger this local month (same revenue as Finance). */
+  vendasDoMes: number;
+  /** Paid payments received this local month (cash actually in). */
+  valorRecebido: number;
+  /** Completed renewals created this local month. */
+  renovacoesMes: number;
+  /** Mean amount of all paid payments (same as Finance's ticket médio). */
+  ticketMedio: number;
 }
 
 export interface DueCredential {

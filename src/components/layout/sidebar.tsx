@@ -9,6 +9,7 @@ import { useTotalUnread } from "@/hooks/use-total-unread";
 import { useUnreadNotifications } from "@/hooks/use-unread-notifications";
 import {
   Activity,
+  BarChart3,
   Bell,
   Bot,
   CalendarClock,
@@ -111,6 +112,7 @@ const navItems: NavItem[] = [
   { href: "/clients", labelKey: "clients", icon: UserCheck },
   { href: "/renewals", labelKey: "renewals", icon: CalendarClock },
   { href: "/finance", labelKey: "finance", icon: Wallet },
+  { href: "/reports", labelKey: "reports", icon: BarChart3 },
   { href: "/iptv/parser", labelKey: "parser", icon: FileText },
 ];
 
