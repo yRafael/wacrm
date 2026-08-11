@@ -31,6 +31,7 @@ import { useCan } from '@/hooks/use-can';
 import { useAuth } from '@/hooks/use-auth';
 import { GatedButton } from '@/components/ui/gated-button';
 import { useTranslations } from 'next-intl';
+import { findStageByName } from '@/lib/pipeline/contact-deal';
 
 // Pipeline creation is admin-class (settings-tier write under
 // the new RLS); deal creation is operational and only requires
@@ -287,24 +288,45 @@ export default function PipelinesPage() {
   // Manual [Em Teste] — move the deal to the "Em Teste" stage of the
   // current pipeline. Stage movement is manual-only (user restriction:
   // never classify by conversation content); this is just a board move.
+  // The stage is resolved by name through the same shared helper the
+  // inbox ⚡ Ações uses, so board and conversation never disagree.
   const handleEmTeste = useCallback(
-    (deal: Deal) => {
-      const target = stages.find((s) => s.name.toLowerCase() === 'em teste');
+    async (deal: Deal) => {
+      if (!deal.pipeline_id) {
+        toast.error(t('toastNoEmTesteStage'));
+        return;
+      }
+      const target = await findStageByName(
+        supabase,
+        deal.pipeline_id,
+        'Em Teste'
+      );
       if (!target) {
         toast.error(t('toastNoEmTesteStage'));
         return;
       }
       handleDealMoved(deal.id, target.id);
     },
-    [stages, handleDealMoved, t]
+    [supabase, handleDealMoved, t]
   );
 
   // After a payment is recorded, advance the deal to "Convertido" so the
   // on_deal_converted DB trigger marks it won and notifies the owner.
-  // Awaits the move then refreshes to avoid a stale-refresh race.
+  // Awaits the move then refreshes to avoid a stale-refresh race. The
+  // stage is resolved by name through the shared contact-deal helper,
+  // matching the inbox 💰 Registrar pagamento flow.
   const handlePaymentRecorded = useCallback(
     async (dealId: string) => {
-      const target = stages.find((s) => s.name.toLowerCase() === 'convertido');
+      const deal = deals.find((d) => d.id === dealId);
+      if (!deal?.pipeline_id) {
+        toast.warning(t('toastNoConvertidoStage'));
+        return;
+      }
+      const target = await findStageByName(
+        supabase,
+        deal.pipeline_id,
+        'Convertido'
+      );
       if (!target) {
         toast.warning(t('toastNoConvertidoStage'));
         return;
@@ -312,7 +334,7 @@ export default function PipelinesPage() {
       await handleDealMoved(dealId, target.id);
       refreshDeals();
     },
-    [stages, handleDealMoved, refreshDeals, t]
+    [deals, supabase, handleDealMoved, refreshDeals, t]
   );
 
   async function handleCreatePipeline() {
