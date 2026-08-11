@@ -94,7 +94,7 @@ export default function QueuePage() {
   }, [loadQueue, reloadTimerRef]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">{t("title")}</h1>

@@ -1,6 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
-@import "shadcn/tailwind.css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -92,7 +92,7 @@
 /* ---- MODE: neutral surfaces ---- */
 
 :root,
-html[data-mode="dark"] {
+html[data-mode='dark'] {
   /* Fire Play "Dark Fire" — carvão-violeta (hue ~285) que casa com o
    * fundo #0A0A0F / painéis #14141B e com o laranja do accent fire. */
   --background: oklch(0.13 0.006 285);
@@ -128,7 +128,7 @@ html[data-mode="dark"] {
   --flame-3: oklch(0.85 0.17 85);
 }
 
-html[data-mode="light"] {
+html[data-mode='light'] {
   --background: oklch(0.99 0.002 260);
   --foreground: oklch(0.21 0.01 260);
   --card: oklch(1 0 0);
@@ -155,12 +155,18 @@ html[data-mode="light"] {
   --sidebar-accent: oklch(0.96 0.004 260);
   --sidebar-accent-foreground: oklch(0.25 0.01 260);
   --sidebar-border: oklch(0.922 0.004 260);
+  /* Marca Fire Play — chama (#FF6B1A), brasa (#FF3D00), brasa clara (#FFB300).
+   * Replicadas do bloco dark para os gradientes de marca (FireWallpaper,
+   * heróis) renderizarem com color-mix() também em modo claro. */
+  --flame-1: oklch(0.72 0.19 40);
+  --flame-2: oklch(0.62 0.22 28);
+  --flame-3: oklch(0.85 0.17 85);
 }
 
 /* ---- ACCENT: primary color ---- */
 
 :root,
-html[data-theme="violet"] {
+html[data-theme='violet'] {
   --primary: oklch(0.526 0.247 293);
   --primary-foreground: oklch(0.985 0 0);
   --primary-hover: oklch(0.6 0.22 293);
@@ -173,7 +179,7 @@ html[data-theme="violet"] {
   --sidebar-ring: oklch(0.526 0.247 293);
 }
 
-html[data-theme="emerald"] {
+html[data-theme='emerald'] {
   --primary: oklch(0.62 0.16 162);
   --primary-foreground: oklch(0.16 0.02 162);
   --primary-hover: oklch(0.68 0.15 162);
@@ -187,7 +193,7 @@ html[data-theme="emerald"] {
   --sidebar-ring: oklch(0.62 0.16 162);
 }
 
-html[data-theme="cobalt"] {
+html[data-theme='cobalt'] {
   --primary: oklch(0.585 0.2 254);
   --primary-foreground: oklch(0.985 0 0);
   --primary-hover: oklch(0.66 0.18 254);
@@ -201,7 +207,7 @@ html[data-theme="cobalt"] {
   --sidebar-ring: oklch(0.585 0.2 254);
 }
 
-html[data-theme="amber"] {
+html[data-theme='amber'] {
   --primary: oklch(0.745 0.16 65);
   --primary-foreground: oklch(0.18 0.03 65);
   --primary-hover: oklch(0.8 0.15 65);
@@ -215,7 +221,7 @@ html[data-theme="amber"] {
   --sidebar-ring: oklch(0.745 0.16 65);
 }
 
-html[data-theme="rose"] {
+html[data-theme='rose'] {
   --primary: oklch(0.645 0.22 16);
   --primary-foreground: oklch(0.985 0 0);
   --primary-hover: oklch(0.71 0.2 16);
@@ -229,7 +235,7 @@ html[data-theme="rose"] {
   --sidebar-ring: oklch(0.645 0.22 16);
 }
 
-html[data-theme="fire"] {
+html[data-theme='fire'] {
   /* Acento Fire Play — laranja de fogo (#FF6B1A ≈ oklch(0.70 0.19 40)),
    * sincronizado com o token de marca --flame-1. */
   --primary: oklch(0.7 0.19 40);
@@ -360,4 +366,95 @@ html[data-theme="fire"] {
   .animate-glow-pulse {
     animation: none;
   }
+}
+
+/* ============================================================
+ * WALLPAPER DA MARCA — Fire Play (telas de auth)
+ *
+ * Fundo full-bleed não-funcional que dá identidade à marca nas
+ * telas de login/signup/forgot-password/join. O componente
+ * FireWallpaper posiciona estas camadas absolutamente dentro de
+ * um parent `relative`; o card do formulário fica num `main`
+ * `relative z-10` acima.
+ *
+ * Tudo deriva dos tokens de marca (--flame-*) via color-mix() em
+ * oklch — que funcionam no dark e no light (tokens replicados nos
+ * dois blocos de mode). A animação reusa `animate-float-slow`,
+ * já desligada pelo prefers-reduced-motion acima.
+ * ============================================================ */
+
+/* Camada de base: três halos de chama estacionários sobre o fundo
+ * do tema. Gradientes amplos, fora das áreas de leitura do card. */
+.fire-wallpaper {
+  background-image:
+    radial-gradient(
+      60rem 55rem at 88% -12%,
+      color-mix(in oklch, var(--flame-2) 24%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      50rem 45rem at -14% 30%,
+      color-mix(in oklch, var(--flame-3) 15%, transparent),
+      transparent 70%
+    ),
+    radial-gradient(
+      72rem 64rem at 50% 118%,
+      color-mix(in oklch, var(--flame-1) 20%, transparent),
+      transparent 72%
+    );
+}
+
+/* Vignette: aprofunda as bordas para destacar o card central. */
+.fire-wallpaper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 90% at 50% 50%,
+    transparent 55%,
+    color-mix(in oklch, var(--background) 72%, transparent)
+  );
+  pointer-events: none;
+}
+
+/* Bolhas de brasa — discos desfocados que derivam lentamente. */
+.fire-wallpaper-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(56px);
+  will-change: transform;
+}
+
+.fire-wallpaper-blob--flame-1 {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--flame-1) 55%, transparent),
+    transparent 70%
+  );
+}
+
+.fire-wallpaper-blob--flame-2 {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--flame-2) 45%, transparent),
+    transparent 70%
+  );
+}
+
+.fire-wallpaper-blob--flame-3 {
+  background: radial-gradient(
+    circle,
+    color-mix(in oklch, var(--flame-3) 50%, transparent),
+    transparent 70%
+  );
+}
+
+/* Fagulhas — pontinhos de brasa com brilho. */
+.fire-wallpaper-ember {
+  position: absolute;
+  border-radius: 9999px;
+  background: var(--flame-1);
+  box-shadow:
+    0 0 10px 2px color-mix(in oklch, var(--flame-1) 60%, transparent),
+    0 0 20px 6px color-mix(in oklch, var(--flame-2) 35%, transparent);
 }

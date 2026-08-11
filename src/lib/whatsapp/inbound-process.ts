@@ -21,10 +21,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 import { normalizePhone } from '@/lib/whatsapp/phone-utils';
-import {
-  findExistingContact,
-  isUniqueViolation,
-} from '@/lib/contacts/dedupe';
+import { findExistingContact, isUniqueViolation } from '@/lib/contacts/dedupe';
 import type { InboundMessagePayload } from '@/lib/whatsapp/baileys/types';
 
 /**
@@ -37,19 +34,19 @@ async function handleReaction(
   conversationId: string,
   contactId: string,
   messageId: string,
-  emoji: string,
+  emoji: string
 ): Promise<void> {
   if (!messageId) return;
 
   const targetInternalId = await lookupInternalIdByMetaId(
     db,
     messageId,
-    conversationId,
+    conversationId
   );
   if (!targetInternalId) {
     console.warn(
       '[inbound] reaction target message not found; skipping',
-      messageId,
+      messageId
     );
     return;
   }
@@ -68,18 +65,16 @@ async function handleReaction(
     return;
   }
 
-  const { error: upsertError } = await db
-    .from('message_reactions')
-    .upsert(
-      {
-        message_id: targetInternalId,
-        conversation_id: conversationId,
-        actor_type: 'customer',
-        actor_id: contactId,
-        emoji,
-      },
-      { onConflict: 'message_id,actor_type,actor_id' },
-    );
+  const { error: upsertError } = await db.from('message_reactions').upsert(
+    {
+      message_id: targetInternalId,
+      conversation_id: conversationId,
+      actor_type: 'customer',
+      actor_id: contactId,
+      emoji,
+    },
+    { onConflict: 'message_id,actor_type,actor_id' }
+  );
   if (upsertError) {
     console.error('[inbound] reaction upsert failed:', upsertError.message);
   }
@@ -93,7 +88,7 @@ async function handleReaction(
 export async function lookupInternalIdByMetaId(
   db: SupabaseClient,
   transportMessageId: string,
-  conversationId: string,
+  conversationId: string
 ): Promise<string | null> {
   const { data, error } = await db
     .from('messages')
@@ -121,7 +116,7 @@ async function findOrCreateContact(
   configOwnerUserId: string,
   phone: string,
   name?: string,
-  lid?: string | null,
+  lid?: string | null
 ): Promise<ContactOutcome | null> {
   // Pre-filters in SQL by the last-8-digit suffix then applies the
   // strict `phonesMatch` in JS on the small candidate set — the same
@@ -150,7 +145,9 @@ async function findOrCreateContact(
   if (lid) {
     const lidContact = await findExistingContact(db, accountId, lid);
     if (lidContact) {
-      const patch: Record<string, string> = { updated_at: new Date().toISOString() };
+      const patch: Record<string, string> = {
+        updated_at: new Date().toISOString(),
+      };
       if (lidContact.phone !== phone) patch.phone = phone;
       if (name && name !== lidContact.name) patch.name = name;
       const { error: migrateError } = await db
@@ -195,7 +192,7 @@ async function findOrCreateConversation(
   db: SupabaseClient,
   accountId: string,
   configOwnerUserId: string,
-  contactId: string,
+  contactId: string
 ) {
   // Oldest-first so the lookup resolves to the canonical survivor the
   // dedup migration (036) keeps; takes one row rather than `.single()`
@@ -247,6 +244,78 @@ async function findOrCreateConversation(
   return { conversation: newConv, created: true };
 }
 
+/**
+ * Land a brand-new contact into the account's "Leads" pipeline as an
+ * automatic lead in its first stage ("Novo Lead").
+ *
+ * The ONLY signal for this is `wasCreated` (a contact that never existed
+ * before arrived via inbound WhatsApp) — per the user's hard restriction
+ * we NEVER classify by conversation content. Stage movement after this
+ * point is manual ([Em Teste], [Registrar pagamento], drag & drop).
+ *
+ * Fail-soft: if the account has no Leads pipeline yet (the RPC in
+ * migration 041/042 seeds one, but a fresh account may not have called
+ * it), or no first stage, we log and skip rather than block the message
+ * from persisting. Runs with the service-role client, so no RLS/auth
+ * concerns.
+ */
+async function createLeadForNewContact(
+  db: SupabaseClient,
+  accountId: string,
+  ownerUserId: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  contact: any
+): Promise<void> {
+  try {
+    const { data: pipeline, error: pipelineError } = await db
+      .from('pipelines')
+      .select('id')
+      .eq('account_id', accountId)
+      .ilike('name', 'leads')
+      .limit(1)
+      .maybeSingle();
+    if (pipelineError || !pipeline) {
+      console.warn(
+        '[inbound] no Leads pipeline; skipping auto lead',
+        pipelineError?.message
+      );
+      return;
+    }
+
+    const { data: firstStage, error: stageError } = await db
+      .from('pipeline_stages')
+      .select('id')
+      .eq('pipeline_id', pipeline.id)
+      .order('position', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+    if (stageError || !firstStage) {
+      console.warn(
+        '[inbound] no first stage on Leads pipeline; skipping auto lead',
+        stageError?.message
+      );
+      return;
+    }
+
+    const { error: insertError } = await db.from('deals').insert({
+      user_id: ownerUserId,
+      account_id: accountId,
+      pipeline_id: pipeline.id,
+      stage_id: firstStage.id,
+      contact_id: contact.id,
+      title: contact.name || contact.phone || 'Novo lead',
+      value: 0,
+      currency: 'USD',
+      status: 'open',
+    });
+    if (insertError) {
+      console.error('[inbound] error creating auto lead:', insertError);
+    }
+  } catch (err) {
+    console.error('[inbound] error creating auto lead:', err);
+  }
+}
+
 export interface ProcessInboundOptions {
   /** Tenancy — drives every contact / conversation lookup. */
   accountId: string;
@@ -267,7 +336,7 @@ export interface ProcessInboundOptions {
 export async function processInboundMessage(
   db: SupabaseClient,
   options: ProcessInboundOptions,
-  message: InboundMessagePayload,
+  message: InboundMessagePayload
 ): Promise<boolean> {
   const { accountId, configOwnerUserId, contactName } = options;
   const senderPhone = normalizePhone(message.from);
@@ -282,7 +351,7 @@ export async function processInboundMessage(
     configOwnerUserId,
     senderPhone,
     contactName,
-    message.lid,
+    message.lid
   );
   if (!contactOutcome) return false;
   const contact = contactOutcome.contact;
@@ -291,7 +360,7 @@ export async function processInboundMessage(
     db,
     accountId,
     configOwnerUserId,
-    contact.id,
+    contact.id
   );
   if (!convResult) return false;
   const conversation = convResult.conversation;
@@ -305,7 +374,7 @@ export async function processInboundMessage(
         conversation.id,
         contact.id,
         message.reaction.messageId,
-        message.reaction.emoji,
+        message.reaction.emoji
       );
     }
     return true;
@@ -313,8 +382,7 @@ export async function processInboundMessage(
 
   // Map the normalized type to the closest allowed content_type
   // (the messages.content_type CHECK constraint).
-  const contentType =
-    message.type === 'location' ? 'location' : message.type;
+  const contentType = message.type === 'location' ? 'location' : message.type;
 
   // Resolve swipe-reply context if present. A missing parent is fine —
   // we store NULL and the UI renders without a quote.
@@ -323,12 +391,12 @@ export async function processInboundMessage(
     replyToInternalId = await lookupInternalIdByMetaId(
       db,
       message.replyToMessageId,
-      conversation.id,
+      conversation.id
     );
     if (!replyToInternalId) {
       console.warn(
         '[inbound] reply context parent not found:',
-        message.replyToMessageId,
+        message.replyToMessageId
       );
     }
   }
@@ -367,6 +435,14 @@ export async function processInboundMessage(
 
   if (convError) {
     console.error('[inbound] error updating conversation:', convError);
+  }
+
+  // A brand-new contact is an automatic lead. Keyed ONLY on wasCreated
+  // (never on message content — user restriction); stage movement from
+  // here is manual. Fail-soft so a missing Leads pipeline can't block
+  // the message that just persisted above.
+  if (contactOutcome.wasCreated) {
+    await createLeadForNewContact(db, accountId, configOwnerUserId, contact);
   }
 
   return true;

@@ -614,7 +614,9 @@
       "toastFailedMoveDeal": "딜을 이동하지 못했습니다",
       "toastFailedCreatePipeline": "파이프라인을 만들지 못했습니다",
       "toastPipelineCreated": "파이프라인이 생성되었습니다",
-      "toastNotLinkedToAccount": "프로필이 계정에 연결되어 있지 않습니다."
+      "toastNotLinkedToAccount": "프로필이 계정에 연결되어 있지 않습니다.",
+      "toastNoEmTesteStage": "이 파이프라인에 '체험 중' 단계가 없습니다",
+      "toastNoConvertidoStage": "이 파이프라인에 '전환됨' 단계가 없습니다"
     },
     "board": {
       "dropDealHere": "여기에 딜을 놓으세요",
@@ -623,7 +625,9 @@
     "card": {
       "noContact": "연락처 없음",
       "won": "성사",
-      "lost": "실패"
+      "lost": "실패",
+      "emTeste": "체험 중",
+      "registerPayment": "결제 등록"
     },
     "form": {
       "editDeal": "딜 수정",
@@ -666,6 +670,27 @@
       "toastReopened": "딜이 재개되었습니다",
       "toastFailedDelete": "딜을 삭제하지 못했습니다",
       "toastDeleted": "딜이 삭제되었습니다"
+    },
+    "payment": {
+      "title": "결제 등록",
+      "subtitle": "이 연락처에 미수금을 개설합니다. 갱신 완료는 갱신 화면에서 진행하세요.",
+      "amount": "금액",
+      "dueAt": "마감일",
+      "methodLabel": "결제 수단",
+      "method": {
+        "pix": "Pix",
+        "cash": "현금",
+        "card": "카드",
+        "transfer": "송금",
+        "boleto": "Boleto",
+        "credit": "신용"
+      },
+      "notes": "메모",
+      "cancel": "취소",
+      "save": "저장",
+      "toastSaved": "결제가 등록되었습니다",
+      "toastFailed": "결제를 등록하지 못했습니다",
+      "unknownContact": "알 수 없는 연락처"
     },
     "settings": {
       "managePipeline": "파이프라인 관리",

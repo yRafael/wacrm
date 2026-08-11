@@ -614,7 +614,9 @@
       "toastFailedMoveDeal": "Failed to move deal",
       "toastFailedCreatePipeline": "Failed to create pipeline",
       "toastPipelineCreated": "Pipeline created",
-      "toastNotLinkedToAccount": "Your profile is not linked to an account."
+      "toastNotLinkedToAccount": "Your profile is not linked to an account.",
+      "toastNoEmTesteStage": "No 'Em Teste' stage in this pipeline",
+      "toastNoConvertidoStage": "No 'Convertido' stage in this pipeline"
     },
     "board": {
       "dropDealHere": "Drop a deal here",
@@ -623,7 +625,9 @@
     "card": {
       "noContact": "No contact",
       "won": "Won",
-      "lost": "Lost"
+      "lost": "Lost",
+      "emTeste": "Trial",
+      "registerPayment": "Register payment"
     },
     "form": {
       "editDeal": "Edit Deal",
@@ -666,6 +670,27 @@
       "toastReopened": "Deal reopened",
       "toastFailedDelete": "Failed to delete deal",
       "toastDeleted": "Deal deleted"
+    },
+    "payment": {
+      "title": "Register Payment",
+      "subtitle": "Opens a pending receivable for this contact. Complete the renewal from the Renewals screen.",
+      "amount": "Amount",
+      "dueAt": "Due Date",
+      "methodLabel": "Payment method",
+      "method": {
+        "pix": "Pix",
+        "cash": "Cash",
+        "card": "Card",
+        "transfer": "Transfer",
+        "boleto": "Boleto",
+        "credit": "Credit"
+      },
+      "notes": "Notes",
+      "cancel": "Cancel",
+      "save": "Save",
+      "toastSaved": "Payment recorded",
+      "toastFailed": "Failed to record payment",
+      "unknownContact": "Unknown contact"
     },
     "settings": {
       "managePipeline": "Manage Pipeline",

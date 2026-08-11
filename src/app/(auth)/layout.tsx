@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
+import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
+import { FireWallpaper } from '@/components/brand/fire-wallpaper';
 
 // Shared metadata for auth pages (login / signup / forgot-password).
 // None of these should be indexed — they'd compete with the marketing
@@ -20,5 +21,10 @@ export const metadata: Metadata = {
 };
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
-  return children;
+  return (
+    <div className="bg-background relative isolate min-h-screen">
+      <FireWallpaper />
+      <main className="relative z-10">{children}</main>
+    </div>
+  );
 }

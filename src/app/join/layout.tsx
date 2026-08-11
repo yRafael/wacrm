@@ -27,6 +27,7 @@
 
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
+import { FireWallpaper } from '@/components/brand/fire-wallpaper';
 
 export const metadata: Metadata = {
   referrer: 'no-referrer',
@@ -37,8 +38,11 @@ export const metadata: Metadata = {
 
 export default function JoinLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      {children}
+    <div className="bg-background relative isolate min-h-screen">
+      <FireWallpaper />
+      <main className="relative z-10 flex min-h-screen items-center justify-center px-4">
+        {children}
+      </main>
     </div>
   );
 }
