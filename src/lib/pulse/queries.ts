@@ -119,10 +119,7 @@ export async function loadPulseMetrics(db: DB): Promise<PulseMetrics> {
       .eq('type', 'income')
       .gte('occurred_at', monthStartISO),
     // Paid payments (amounts) — valor recebido + ticket médio in one pass.
-    db
-      .from('payments')
-      .select('amount, paid_at')
-      .eq('status', 'paid'),
+    db.from('payments').select('amount, paid_at').eq('status', 'paid'),
     db
       .from('renewals')
       .select('id', { count: 'exact', head: true })
@@ -195,7 +192,8 @@ export async function loadPulseMetrics(db: DB): Promise<PulseMetrics> {
     amount: number;
     paid_at: string | null;
   }>) {
-    if (row.paid_at && row.paid_at >= monthStartISO) valorRecebido += row.amount;
+    if (row.paid_at && row.paid_at >= monthStartISO)
+      valorRecebido += row.amount;
     ticketTotal += row.amount;
     paidCount += 1;
   }
@@ -249,7 +247,10 @@ interface PaymentRow {
 
 /** Contact display name — falls back to the phone so anonymous rows
  *  (panels often create contacts with only a phone) still read well. */
-function contactLabel(c: ContactRef | null): { contactId: string; contactName: string } {
+function contactLabel(c: ContactRef | null): {
+  contactId: string;
+  contactName: string;
+} {
   return {
     contactId: c?.id ?? '',
     contactName: c?.name || c?.phone || '—',
@@ -284,7 +285,7 @@ export async function loadPulsePriorities(db: DB): Promise<PulsePriorities> {
 
   const due: DueCredential[] = (credsRes.data ?? []).map((row) => {
     const { contactId, contactName } = contactLabel(
-      single(row.contact as CredentialRow['contact']),
+      single(row.contact as CredentialRow['contact'])
     );
     return {
       id: row.id,
@@ -297,7 +298,7 @@ export async function loadPulsePriorities(db: DB): Promise<PulsePriorities> {
 
   const payments: PendingPayment[] = (paymentsRes.data ?? []).map((row) => {
     const { contactId, contactName } = contactLabel(
-      single(row.contact as PaymentRow['contact']),
+      single(row.contact as PaymentRow['contact'])
     );
     return {
       id: row.id,
@@ -327,29 +328,33 @@ interface ActivityRow {
  * operation: completed renewals, opened receivables, alerts
  * (notifications) and saved credentials.
  */
-export async function loadPulseActivity(db: DB, limit = 15): Promise<PulseActivityItem[]> {
-  const [renewalsRes, paymentsRes, notificationsRes, credsRes] = await Promise.all([
-    db
-      .from('renewals')
-      .select('id, created_at, amount, contact:contacts(id, name, phone)')
-      .order('created_at', { ascending: false })
-      .limit(12),
-    db
-      .from('payments')
-      .select('id, created_at, amount, contact:contacts(id, name, phone)')
-      .order('created_at', { ascending: false })
-      .limit(12),
-    db
-      .from('notifications')
-      .select('id, title, body, created_at')
-      .order('created_at', { ascending: false })
-      .limit(12),
-    db
-      .from('iptv_credentials')
-      .select('id, created_at, contact:contacts(id, name, phone)')
-      .order('created_at', { ascending: false })
-      .limit(6),
-  ]);
+export async function loadPulseActivity(
+  db: DB,
+  limit = 15
+): Promise<PulseActivityItem[]> {
+  const [renewalsRes, paymentsRes, notificationsRes, credsRes] =
+    await Promise.all([
+      db
+        .from('renewals')
+        .select('id, created_at, amount, contact:contacts(id, name, phone)')
+        .order('created_at', { ascending: false })
+        .limit(12),
+      db
+        .from('payments')
+        .select('id, created_at, amount, contact:contacts(id, name, phone)')
+        .order('created_at', { ascending: false })
+        .limit(12),
+      db
+        .from('notifications')
+        .select('id, title, body, created_at')
+        .order('created_at', { ascending: false })
+        .limit(12),
+      db
+        .from('iptv_credentials')
+        .select('id, created_at, contact:contacts(id, name, phone)')
+        .order('created_at', { ascending: false })
+        .limit(6),
+    ]);
 
   const items: PulseActivityItem[] = [];
 
@@ -449,7 +454,9 @@ export async function loadOperators(db: DB): Promise<PulseOperators> {
   });
 
   // Busiest first — the operator who most needs help floats to the top.
-  operators.sort((a, b) => b.pendentes - a.pendentes || b.atendimentos - a.atendimentos);
+  operators.sort(
+    (a, b) => b.pendentes - a.pendentes || b.atendimentos - a.atendimentos
+  );
 
   return { operators, unassigned };
 }

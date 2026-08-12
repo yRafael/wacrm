@@ -61,7 +61,7 @@ export interface PendingPayment {
   amount: number;
   /** ISO timestamp of `due_at`. */
   dueAt: string;
-  status: "pending" | "late" | "partial";
+  status: 'pending' | 'late' | 'partial';
   /** True when `due_at` is before now (payment overdue). */
   overdue: boolean;
 }
@@ -73,7 +73,7 @@ export interface PulsePriorities {
   payments: PendingPayment[];
 }
 
-export type PulseActivityKind = "renewal" | "payment" | "alert" | "credential";
+export type PulseActivityKind = 'renewal' | 'payment' | 'alert' | 'credential';
 
 export interface PulseActivityItem {
   id: string;
