@@ -1,12 +1,22 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  type CSSProperties,
+} from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
+import { useBranding } from '@/hooks/use-branding';
 import { usePresence } from '@/hooks/use-presence';
 import { PresenceDot } from '@/components/presence/presence-dot';
 import { presenceLabel } from '@/lib/presence';
 import { cn } from '@/lib/utils';
+import { resolveBackgroundCss } from '@/lib/branding/presets';
+import type { ChatBackgroundSettings } from '@/lib/branding/types';
 import type {
   Conversation,
   Message,
@@ -163,6 +173,52 @@ const STATUS_OPTIONS: {
 const DOODLE_BG_CLASSES =
   "bg-background bg-[url('/inbox-doodle.svg')] bg-repeat";
 
+/**
+ * Branded chat backdrop — the company's background image/preset rendered
+ * absolutely under the thread (`pointer-events-none`), with blur/scale/
+ * opacity applied and a legibility scrim above the image and below the
+ * messages. Mirrors the panel's ThreadMock so what you preview is what
+ * the real thread renders. Rendering is delegated here so the root keeps
+ * its flex column; the thread's header/messages/composer sit on a
+ * `relative z-10` wrapper above it.
+ */
+function ChatBackdrop({
+  bg,
+  css,
+}: {
+  bg: ChatBackgroundSettings;
+  css: string;
+}) {
+  return (
+    <>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: css,
+          backgroundSize:
+            bg.kind === 'preset' && css.includes('url(') ? 'auto' : 'cover',
+          backgroundPosition: bg.position,
+          backgroundRepeat:
+            css.startsWith('url(') || css.includes(') 0 0 /')
+              ? 'repeat'
+              : 'no-repeat',
+          filter: bg.blur > 0 ? `blur(${bg.blur}px)` : undefined,
+          transform: bg.scale !== 1 ? `scale(${bg.scale})` : undefined,
+          opacity: bg.opacity,
+        }}
+      />
+      {bg.overlayOpacity > 0 ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0"
+          style={{ background: bg.overlayColor, opacity: bg.overlayOpacity }}
+        />
+      ) : null}
+    </>
+  );
+}
+
 export function MessageThread({
   conversation,
   contact,
@@ -183,8 +239,31 @@ export function MessageThread({
   const tQuote = useTranslations('Inbox.replyQuote');
 
   const { user, accountId } = useAuth();
+  const { branding } = useBranding();
   const { getPresence, getRow, now } = usePresence();
   const [loading, setLoading] = useState(false);
+  // Bubble tokens — always set inline on the thread root so message-bubble
+  // just consumes the vars (globals.css holds the same defaults as a
+  // safety net). With no company customization the vars fall back to the
+  // classic primary/muted surfaces, so existing threads render identical.
+  // The translucent derivations key off the sent-text: a light brand bubble
+  // keeps its quote/badge/timestamp readable on the brand fill.
+  const bubbleVars: CSSProperties = useMemo(() => {
+    const sentText = branding?.config.chat.bubbles.sentText;
+    const sentTextFallback = sentText ?? 'var(--primary-foreground)';
+    return {
+      '--bubble-sent-bg':
+        branding?.config.chat.bubbles.sentBg ?? 'var(--primary)',
+      '--bubble-sent-text': sentTextFallback,
+      '--bubble-sent-soft': `color-mix(in srgb, ${sentTextFallback} 15%, transparent)`,
+      '--bubble-sent-time': `color-mix(in srgb, ${sentTextFallback} 70%, transparent)`,
+      '--bubble-sent-quote-border': `color-mix(in srgb, ${sentTextFallback} 50%, transparent)`,
+      '--bubble-received-bg':
+        branding?.config.chat.bubbles.receivedBg ?? 'var(--muted)',
+      '--bubble-received-text':
+        branding?.config.chat.bubbles.receivedText ?? 'var(--foreground)',
+    } as CSSProperties;
+  }, [branding]);
   // Client stats drive the header pills (Cliente/Lead + "Vence em N
   // dias"). Same aggregation as the subscription card / Perfil 360°.
   const [stats, setStats] = useState<ClientStats | null>(null);
@@ -903,6 +982,12 @@ export function MessageThread({
     );
   }
 
+  // Branded chat backdrop — null when the company has no background
+  // configured, so the default doodle keeps rendering untouched.
+  const chatBg = branding?.config.chat.background;
+  const backdropCss =
+    chatBg && chatBg.kind !== 'none' ? resolveBackgroundCss(chatBg) : null;
+
   const displayName = contact.name || contact.phone;
   const messageGroups = groupMessagesByDate(messages);
   const currentStatus = STATUS_OPTIONS.find(
@@ -923,354 +1008,379 @@ export function MessageThread({
     // clipped and the hover toolbar overlaps the Tags panel. Letting the
     // root shrink lets the bubbles' break-words / max-w caps apply.
     // Issue #257.
-    <div className={cn('flex min-w-0 flex-1 flex-col', DOODLE_BG_CLASSES)}>
-      {/* Header — solid card surface sits on top of the doodle so the
-          name/avatar/dropdowns stay legible. */}
-      <div className="border-border bg-card flex items-center justify-between gap-2 border-b px-3 py-3 sm:px-4">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          {/* Back-to-list button — mobile only. Hidden on lg+ where the
-              conversation list is always visible next to the thread. */}
-          {onBack && (
-            <button
-              type="button"
-              onClick={onBack}
-              aria-label={t('backToConversations')}
-              className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md lg:hidden"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-          )}
-          <div className="bg-muted text-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-medium">
-            {displayName.charAt(0).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-foreground truncate text-sm font-semibold">
-              {displayName}
-            </h2>
-            <p className="text-muted-foreground flex items-center gap-1.5 truncate text-xs">
-              <span className="truncate">{contact.phone}</span>
-              {/* Cliente/Lead + vencimento pills — the subscription state
-                  at a glance, driven by the same stats as the sidebar. */}
-              {stats && (
-                <>
-                  <span
-                    className={cn(
-                      'shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium',
-                      stats.status !== 'none'
-                        ? 'bg-primary/10 text-primary'
-                        : 'bg-muted text-muted-foreground'
-                    )}
-                  >
-                    {stats.status !== 'none' ? t('pillClient') : t('pillLead')}
-                  </span>
-                  {stats.credential &&
-                    stats.status === 'expired' &&
-                    stats.daysUntilExpiry !== null && (
-                      <span className="shrink-0 rounded-full bg-red-500/10 px-1.5 py-px text-[10px] font-medium text-red-500">
-                        {t('pillExpiredDays', {
-                          days: Math.abs(stats.daysUntilExpiry),
-                        })}
-                      </span>
-                    )}
-                  {stats.credential &&
-                    stats.status === 'expiring_soon' &&
-                    stats.daysUntilExpiry !== null && (
-                      <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-px text-[10px] font-medium text-amber-500">
-                        {t('pillExpiresIn', { days: stats.daysUntilExpiry })}
-                      </span>
-                    )}
-                </>
-              )}
-            </p>
-          </div>
-          {/* Session timer badge — hidden on the narrowest phones so
-              the name + back arrow keep their room. */}
-          <Badge
-            variant="outline"
-            className={cn(
-              'border-border ml-1 hidden gap-1 text-[10px] sm:ml-2 sm:inline-flex',
-              sessionInfo.expired ? 'text-red-400' : 'text-primary'
-            )}
-          >
-            <Clock className="h-3 w-3" />
-            {sessionInfo.remaining}
-          </Badge>
-        </div>
+    <div
+      className={cn(
+        'relative flex min-w-0 flex-1 flex-col',
+        backdropCss ? 'bg-background' : DOODLE_BG_CLASSES
+      )}
+      style={bubbleVars}
+    >
+      {/* Branded backdrop — absolute, pointer-events-none, under the whole
+          thread. The header/messages/composer column above it is `relative
+          z-10`, so the brand image never sits over interactive UI. */}
+      {backdropCss && chatBg ? (
+        <ChatBackdrop bg={chatBg} css={backdropCss} />
+      ) : null}
 
-        <div className="flex items-center gap-2">
-          {/* Contact-panel toggle — desktop only. The contact sidebar
+      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+        {/* Header — solid card surface sits on top of the doodle so the
+          name/avatar/dropdowns stay legible. */}
+        <div className="border-border bg-card flex items-center justify-between gap-2 border-b px-3 py-3 sm:px-4">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            {/* Back-to-list button — mobile only. Hidden on lg+ where the
+              conversation list is always visible next to the thread. */}
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label={t('backToConversations')}
+                className="text-muted-foreground hover:bg-muted hover:text-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md lg:hidden"
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </button>
+            )}
+            <div className="bg-muted text-foreground flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-sm font-medium">
+              {displayName.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-foreground truncate text-sm font-semibold">
+                {displayName}
+              </h2>
+              <p className="text-muted-foreground flex items-center gap-1.5 truncate text-xs">
+                <span className="truncate">{contact.phone}</span>
+                {/* Cliente/Lead + vencimento pills — the subscription state
+                  at a glance, driven by the same stats as the sidebar. */}
+                {stats && (
+                  <>
+                    <span
+                      className={cn(
+                        'shrink-0 rounded-full px-1.5 py-px text-[10px] font-medium',
+                        stats.status !== 'none'
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      {stats.status !== 'none'
+                        ? t('pillClient')
+                        : t('pillLead')}
+                    </span>
+                    {stats.credential &&
+                      stats.status === 'expired' &&
+                      stats.daysUntilExpiry !== null && (
+                        <span className="shrink-0 rounded-full bg-red-500/10 px-1.5 py-px text-[10px] font-medium text-red-500">
+                          {t('pillExpiredDays', {
+                            days: Math.abs(stats.daysUntilExpiry),
+                          })}
+                        </span>
+                      )}
+                    {stats.credential &&
+                      stats.status === 'expiring_soon' &&
+                      stats.daysUntilExpiry !== null && (
+                        <span className="shrink-0 rounded-full bg-amber-500/10 px-1.5 py-px text-[10px] font-medium text-amber-500">
+                          {t('pillExpiresIn', { days: stats.daysUntilExpiry })}
+                        </span>
+                      )}
+                  </>
+                )}
+              </p>
+            </div>
+            {/* Session timer badge — hidden on the narrowest phones so
+              the name + back arrow keep their room. */}
+            <Badge
+              variant="outline"
+              className={cn(
+                'border-border ml-1 hidden gap-1 text-[10px] sm:ml-2 sm:inline-flex',
+                sessionInfo.expired ? 'text-red-400' : 'text-primary'
+              )}
+            >
+              <Clock className="h-3 w-3" />
+              {sessionInfo.remaining}
+            </Badge>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Contact-panel toggle — desktop only. The contact sidebar
               eats a chunk of horizontal width that crowds the thread on
               smaller laptops; this lets agents reclaim it when they just
               want to read and reply. Hidden on mobile, where the sidebar
               never renders as a permanent panel anyway. Issue #258. */}
-          {onToggleContactPanel && (
-            <button
-              type="button"
-              onClick={onToggleContactPanel}
-              aria-label={
-                contactPanelOpen ? t('hideContactPanel') : t('showContactPanel')
-              }
-              title={contactPanelOpen ? t('hideContact') : t('showContact')}
-              aria-pressed={contactPanelOpen}
-              className={cn(
-                'hover:bg-muted hover:text-foreground hidden h-7 w-7 items-center justify-center rounded-md transition-colors lg:inline-flex',
-                contactPanelOpen ? 'text-primary' : 'text-muted-foreground'
-              )}
-            >
-              {contactPanelOpen ? (
-                <PanelRightClose className="h-4 w-4" />
-              ) : (
-                <PanelRightOpen className="h-4 w-4" />
-              )}
-            </button>
-          )}
+            {onToggleContactPanel && (
+              <button
+                type="button"
+                onClick={onToggleContactPanel}
+                aria-label={
+                  contactPanelOpen
+                    ? t('hideContactPanel')
+                    : t('showContactPanel')
+                }
+                title={contactPanelOpen ? t('hideContact') : t('showContact')}
+                aria-pressed={contactPanelOpen}
+                className={cn(
+                  'hover:bg-muted hover:text-foreground hidden h-7 w-7 items-center justify-center rounded-md transition-colors lg:inline-flex',
+                  contactPanelOpen ? 'text-primary' : 'text-muted-foreground'
+                )}
+              >
+                {contactPanelOpen ? (
+                  <PanelRightClose className="h-4 w-4" />
+                ) : (
+                  <PanelRightOpen className="h-4 w-4" />
+                )}
+              </button>
+            )}
 
-          {/* Manual refresh — forces a refetch of the messages + the
+            {/* Manual refresh — forces a refetch of the messages + the
               conversation list (the parent bumps its resyncToken). Useful
               when realtime missed an event or the agent just wants to be
               sure nothing's stale. Only rendered when the parent wires
               up `onRefresh`. */}
-          {onRefresh && (
-            <button
-              type="button"
-              onClick={handleRefreshClick}
-              disabled={isRefreshing}
-              aria-label={t('refreshConversation')}
-              title={t('refresh')}
-              className={cn(
-                'text-muted-foreground hover:bg-muted hover:text-foreground inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:opacity-60'
-              )}
-            >
-              <RefreshCw
-                className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')}
-              />
-            </button>
-          )}
+            {onRefresh && (
+              <button
+                type="button"
+                onClick={handleRefreshClick}
+                disabled={isRefreshing}
+                aria-label={t('refreshConversation')}
+                title={t('refresh')}
+                className={cn(
+                  'text-muted-foreground hover:bg-muted hover:text-foreground inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors disabled:opacity-60'
+                )}
+              >
+                <RefreshCw
+                  className={cn('h-3.5 w-3.5', isRefreshing && 'animate-spin')}
+                />
+              </button>
+            )}
 
-          {/* Status dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={cn(
-                'hover:bg-muted inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
-                currentStatus?.color ?? 'text-muted-foreground'
-              )}
-            >
-              {currentStatus ? t(`status${currentStatus.label}`) : t('status')}
-              <ChevronDown className="h-3 w-3" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="border-border bg-popover"
-            >
-              {STATUS_OPTIONS.map((opt) => (
-                <DropdownMenuItem
-                  key={opt.value}
-                  onClick={() => handleStatusChange(opt.value)}
-                  className={cn('text-sm', opt.color)}
-                >
-                  {t(`status${opt.label}`)}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Assign dropdown */}
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className={cn(
-                'hover:bg-muted inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
-                assignedAgentId ? 'text-primary' : 'text-muted-foreground'
-              )}
-            >
-              <UserPlus className="h-3 w-3" />
-              <span className="hidden sm:inline">{assignLabel}</span>
-              <ChevronDown className="h-3 w-3" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="border-border bg-popover"
-            >
-              {profiles.length === 0 ? (
-                <DropdownMenuItem
-                  disabled
-                  className="text-muted-foreground text-sm"
-                >
-                  {t('noTeammates')}
-                </DropdownMenuItem>
-              ) : (
-                profiles.map((p) => {
-                  const isSelected = p.user_id === assignedAgentId;
-                  const presence = getPresence(p.user_id);
-                  return (
-                    <DropdownMenuItem
-                      key={p.id}
-                      onClick={() => handleAssignChange(p.user_id)}
-                      className={cn(
-                        'text-sm',
-                        isSelected ? 'text-primary' : 'text-popover-foreground'
-                      )}
-                    >
-                      <PresenceDot
-                        status={presence}
-                        label={presenceLabel(
-                          presence,
-                          getRow(p.user_id)?.last_seen_at ?? null,
-                          now
-                        )}
-                        className="mr-2"
-                      />
-                      <span className="flex-1">
-                        {p.full_name}
-                        {p.user_id === user?.id ? t('me') : ''}
-                      </span>
-                      {isSelected && <Check className="ml-2 h-3 w-3" />}
-                    </DropdownMenuItem>
-                  );
-                })
-              )}
-              {assignedAgentId && (
-                <>
-                  <DropdownMenuSeparator className="bg-border" />
+            {/* Status dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={cn(
+                  'hover:bg-muted inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
+                  currentStatus?.color ?? 'text-muted-foreground'
+                )}
+              >
+                {currentStatus
+                  ? t(`status${currentStatus.label}`)
+                  : t('status')}
+                <ChevronDown className="h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="border-border bg-popover"
+              >
+                {STATUS_OPTIONS.map((opt) => (
                   <DropdownMenuItem
-                    onClick={() => handleAssignChange(null)}
+                    key={opt.value}
+                    onClick={() => handleStatusChange(opt.value)}
+                    className={cn('text-sm', opt.color)}
+                  >
+                    {t(`status${opt.label}`)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Assign dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger
+                className={cn(
+                  'hover:bg-muted inline-flex h-7 items-center justify-center gap-1 rounded-md px-2 text-xs',
+                  assignedAgentId ? 'text-primary' : 'text-muted-foreground'
+                )}
+              >
+                <UserPlus className="h-3 w-3" />
+                <span className="hidden sm:inline">{assignLabel}</span>
+                <ChevronDown className="h-3 w-3" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="end"
+                className="border-border bg-popover"
+              >
+                {profiles.length === 0 ? (
+                  <DropdownMenuItem
+                    disabled
                     className="text-muted-foreground text-sm"
                   >
-                    {t('unassign')}
+                    {t('noTeammates')}
                   </DropdownMenuItem>
-                </>
-              )}
-            </DropdownMenuContent>
-          </DropdownMenu>
+                ) : (
+                  profiles.map((p) => {
+                    const isSelected = p.user_id === assignedAgentId;
+                    const presence = getPresence(p.user_id);
+                    return (
+                      <DropdownMenuItem
+                        key={p.id}
+                        onClick={() => handleAssignChange(p.user_id)}
+                        className={cn(
+                          'text-sm',
+                          isSelected
+                            ? 'text-primary'
+                            : 'text-popover-foreground'
+                        )}
+                      >
+                        <PresenceDot
+                          status={presence}
+                          label={presenceLabel(
+                            presence,
+                            getRow(p.user_id)?.last_seen_at ?? null,
+                            now
+                          )}
+                          className="mr-2"
+                        />
+                        <span className="flex-1">
+                          {p.full_name}
+                          {p.user_id === user?.id ? t('me') : ''}
+                        </span>
+                        {isSelected && <Check className="ml-2 h-3 w-3" />}
+                      </DropdownMenuItem>
+                    );
+                  })
+                )}
+                {assignedAgentId && (
+                  <>
+                    <DropdownMenuSeparator className="bg-border" />
+                    <DropdownMenuItem
+                      onClick={() => handleAssignChange(null)}
+                      className="text-muted-foreground text-sm"
+                    >
+                      {t('unassign')}
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
-          {/* Plano — compact header field. Viewers see it read-only;
+            {/* Plano — compact header field. Viewers see it read-only;
               agents pick from the account's catalog. Changing it writes
               plan_id + duration_days on the credential. */}
-          <PlanSelector
-            contact={contact}
-            stats={stats}
-            onStatsChanged={refreshStats}
-          />
+            <PlanSelector
+              contact={contact}
+              stats={stats}
+              onStatsChanged={refreshStats}
+            />
 
-          {/* ⚡ Ações — the manual operational panel. Writes go through
+            {/* ⚡ Ações — the manual operational panel. Writes go through
               RLS (agent+), so the /pipelines board reflects them on its
               next mount; onStatsChanged refetches the header stats so
               the pills + subscription card update in place. */}
-          <QuickActions
-            contact={contact}
-            stats={stats}
-            onStatsChanged={refreshStats}
-          />
+            <QuickActions
+              contact={contact}
+              stats={stats}
+              onStatsChanged={refreshStats}
+            />
+          </div>
         </div>
-      </div>
 
-      {/* Messages Area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
-          </div>
-        ) : messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground text-sm">
-              {t('noMessagesYet')}
-            </p>
-            <p className="text-muted-foreground text-xs">
-              {t('sendTemplateHint')}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {messageGroups.map((group) => (
-              <div key={group.date}>
-                {/* Date separator */}
-                <div className="mb-4 flex items-center justify-center">
-                  <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-[10px] font-medium">
-                    {formatDateSeparator(group.date, t)}
-                  </span>
-                </div>
-                {/* Messages */}
-                <div className="space-y-2">
-                  {group.messages.map((msg) => {
-                    const parent = msg.reply_to_message_id
-                      ? messagesById.get(msg.reply_to_message_id)
-                      : null;
-                    const reply = parent
-                      ? {
-                          authorLabel:
-                            parent.sender_type === 'agent' ||
-                            parent.sender_type === 'bot'
-                              ? t('me')
-                              : contact?.name ||
-                                contact?.phone ||
-                                'Desconhecido',
-                          preview: buildReplyPreview(parent, tQuote),
-                        }
-                      : null;
-                    const msgReactions = reactionsByMessageId.get(msg.id);
-                    // Toggle is computed at the call site — `msgReactions`
-                    // and `user?.id` are already in scope, no extra hook.
-                    const handlePillToggle = (emoji: string) => {
-                      const own = msgReactions?.find(
-                        (r) =>
-                          r.actor_type === 'agent' && r.actor_id === user?.id
-                      );
-                      const next = own?.emoji === emoji ? '' : emoji;
-                      void postReaction(msg.id, next);
-                    };
-                    return (
-                      <MessageActions
-                        key={msg.id}
-                        message={msg}
-                        onReply={() => handleStartReply(msg)}
-                        onReact={(emoji) => {
-                          if (emoji) void postReaction(msg.id, emoji);
-                        }}
-                      >
-                        <MessageBubble
+        {/* Messages Area */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="border-primary h-5 w-5 animate-spin rounded-full border-2 border-t-transparent" />
+            </div>
+          ) : messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12">
+              <p className="text-muted-foreground text-sm">
+                {t('noMessagesYet')}
+              </p>
+              <p className="text-muted-foreground text-xs">
+                {t('sendTemplateHint')}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messageGroups.map((group) => (
+                <div key={group.date}>
+                  {/* Date separator */}
+                  <div className="mb-4 flex items-center justify-center">
+                    <span className="bg-muted text-muted-foreground rounded-full px-3 py-1 text-[10px] font-medium">
+                      {formatDateSeparator(group.date, t)}
+                    </span>
+                  </div>
+                  {/* Messages */}
+                  <div className="space-y-2">
+                    {group.messages.map((msg) => {
+                      const parent = msg.reply_to_message_id
+                        ? messagesById.get(msg.reply_to_message_id)
+                        : null;
+                      const reply = parent
+                        ? {
+                            authorLabel:
+                              parent.sender_type === 'agent' ||
+                              parent.sender_type === 'bot'
+                                ? t('me')
+                                : contact?.name ||
+                                  contact?.phone ||
+                                  'Desconhecido',
+                            preview: buildReplyPreview(parent, tQuote),
+                          }
+                        : null;
+                      const msgReactions = reactionsByMessageId.get(msg.id);
+                      // Toggle is computed at the call site — `msgReactions`
+                      // and `user?.id` are already in scope, no extra hook.
+                      const handlePillToggle = (emoji: string) => {
+                        const own = msgReactions?.find(
+                          (r) =>
+                            r.actor_type === 'agent' && r.actor_id === user?.id
+                        );
+                        const next = own?.emoji === emoji ? '' : emoji;
+                        void postReaction(msg.id, next);
+                      };
+                      return (
+                        <MessageActions
+                          key={msg.id}
                           message={msg}
-                          reply={reply}
-                          reactions={msgReactions}
-                          currentUserId={user?.id}
-                          onToggleReaction={handlePillToggle}
-                        />
-                      </MessageActions>
-                    );
-                  })}
+                          onReply={() => handleStartReply(msg)}
+                          onReact={(emoji) => {
+                            if (emoji) void postReaction(msg.id, emoji);
+                          }}
+                        >
+                          <MessageBubble
+                            message={msg}
+                            reply={reply}
+                            reactions={msgReactions}
+                            currentUserId={user?.id}
+                            onToggleReaction={handlePillToggle}
+                          />
+                        </MessageActions>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-      {/* AI auto-reply banner — take over an active bot, or resume it
+        {/* AI auto-reply banner — take over an active bot, or resume it
           after a handoff. Renders nothing unless the account has
           auto-reply configured. */}
-      <AiThreadBanner
-        conversationId={conversation.id}
-        disabled={conversation.ai_autoreply_disabled ?? false}
-        handoffSummary={conversation.ai_handoff_summary}
-        assignedAgentId={assignedAgentId}
-        currentUserId={user?.id}
-        onChange={(patch) => {
-          if ('assigned_agent_id' in patch) {
-            onAssignChange(conversation.id, patch.assigned_agent_id ?? null);
-          }
-        }}
-      />
+        <AiThreadBanner
+          conversationId={conversation.id}
+          disabled={conversation.ai_autoreply_disabled ?? false}
+          handoffSummary={conversation.ai_handoff_summary}
+          assignedAgentId={assignedAgentId}
+          currentUserId={user?.id}
+          onChange={(patch) => {
+            if ('assigned_agent_id' in patch) {
+              onAssignChange(conversation.id, patch.assigned_agent_id ?? null);
+            }
+          }}
+        />
 
-      {/* Composer */}
-      <MessageComposer
-        conversationId={conversation.id}
-        sessionExpired={sessionInfo.expired}
-        onSend={handleSend}
-        onSendMedia={handleSendMedia}
-        onSendInteractive={handleSendInteractive}
-        onOpenTemplates={handleOpenTemplates}
-        replyTo={replyTo}
-        onClearReply={() => setReplyTo(null)}
-      />
+        {/* Composer */}
+        <MessageComposer
+          conversationId={conversation.id}
+          sessionExpired={sessionInfo.expired}
+          onSend={handleSend}
+          onSendMedia={handleSendMedia}
+          onSendInteractive={handleSendInteractive}
+          onOpenTemplates={handleOpenTemplates}
+          replyTo={replyTo}
+          onClearReply={() => setReplyTo(null)}
+        />
+      </div>
 
+      {/* Template picker is a modal — lives outside the branded column so
+          the backdrop never shows behind its dialog. */}
       <TemplatePicker
         open={templateModalOpen}
         onOpenChange={setTemplateModalOpen}

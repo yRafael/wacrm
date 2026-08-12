@@ -19,6 +19,7 @@ import { DealsSettings } from '@/components/settings/deals-settings';
 import { CatalogSettings } from '@/components/settings/catalog-settings';
 import { MembersTab } from '@/components/settings/members-tab';
 import { ApiKeysSettings } from '@/components/settings/api-keys-settings';
+import { PersonalizationPanel } from '@/components/settings/personalization-panel';
 import {
   resolveSection,
   type SettingsSection,
@@ -83,6 +84,7 @@ function SettingsPageInner() {
     catalog: <CatalogSettings />,
     members: <MembersTab />,
     api: <ApiKeysSettings />,
+    personalization: <PersonalizationPanel />,
   };
 
   return (

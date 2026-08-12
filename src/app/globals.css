@@ -126,6 +126,29 @@ html[data-mode='dark'] {
   --flame-1: oklch(0.72 0.19 40);
   --flame-2: oklch(0.62 0.22 28);
   --flame-3: oklch(0.85 0.17 85);
+  /* Balões do chat — defaults idênticos às superfícies atuais (enviado
+   * sobre o primary, recebido sobre muted). O message-thread sobrescreve
+   * estes tokens por baixo com as cores da identidade da empresa, então
+   * cada variável é resolvida no ponto de uso. */
+  --bubble-sent-bg: var(--primary);
+  --bubble-sent-text: var(--primary-foreground);
+  --bubble-sent-soft: color-mix(
+    in srgb,
+    var(--primary-foreground) 15%,
+    transparent
+  );
+  --bubble-sent-time: color-mix(
+    in srgb,
+    var(--primary-foreground) 70%,
+    transparent
+  );
+  --bubble-sent-quote-border: color-mix(
+    in srgb,
+    var(--primary-foreground) 50%,
+    transparent
+  );
+  --bubble-received-bg: var(--muted);
+  --bubble-received-text: var(--foreground);
 }
 
 html[data-mode='light'] {
