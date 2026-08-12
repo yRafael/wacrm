@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { requireRole, toErrorResponse } from '@/lib/auth/account'
 import { supabaseAdmin } from '@/lib/automations/admin-client'
 import {
@@ -12,28 +11,35 @@ import {
   validateTriggerForActivation,
 } from '@/lib/automations/validate'
 
-async function requireUser() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user
-}
+// All three handlers resolve the caller's account FROM THE SESSION via
+// `requireRole` and match the target automation by `account_id`. No
+// account_id / user_id / role value coming from the client is ever used
+// to scope these queries — the service-role client bypasses RLS, so the
+// account boundary is enforced here in code, on the server.
+//
+// Note: scoping by account (not creator) means any member of the account
+// can read/edit/delete the team's automations — matching the RLS policies
+// (select=viewer, write=agent). This is the intended team model (017).
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params
-  const user = await requireUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  let ctx
+  try {
+    ctx = await requireRole('viewer')
+  } catch (err) {
+    return toErrorResponse(err)
+  }
 
   const admin = supabaseAdmin()
   const { data: automation, error } = await admin
     .from('automations')
     .select('*')
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('account_id', ctx.accountId)
     .maybeSingle()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -52,14 +58,12 @@ export async function PATCH(
   // Editing an automation is a write — the RLS automations_update policy
   // requires `agent`, but this route mutates via the service-role client
   // which bypasses RLS, so enforce the role here.
+  let ctx
   try {
-    await requireRole('agent')
+    ctx = await requireRole('agent')
   } catch (err) {
     return toErrorResponse(err)
   }
-
-  const user = await requireUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json().catch(() => null)
   if (!body) return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
@@ -67,13 +71,15 @@ export async function PATCH(
   const admin = supabaseAdmin()
 
   // Ownership check before we touch anything. Load the fields we need
-  // to compute the post-patch "effective" state for validation.
+  // to compute the post-patch "effective" state for validation. The
+  // target is matched against the CALLER'S account (resolved from the
+  // session) — never against anything the client supplied.
   const { data: existing } = await admin
     .from('automations')
-    .select('id, user_id, is_active, trigger_type, trigger_config')
+    .select('id, account_id, is_active, trigger_type, trigger_config')
     .eq('id', id)
     .maybeSingle()
-  if (!existing || existing.user_id !== user.id) {
+  if (!existing || existing.account_id !== ctx.accountId) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
@@ -120,6 +126,7 @@ export async function PATCH(
       .from('automations')
       .update(update)
       .eq('id', id)
+      .eq('account_id', ctx.accountId)
     if (updErr) return NextResponse.json({ error: updErr.message }, { status: 500 })
   }
 
@@ -139,20 +146,18 @@ export async function DELETE(
 
   // Deleting an automation is a write — enforce `agent` (the service-role
   // client below bypasses the agent-gated automations_delete RLS).
+  let ctx
   try {
-    await requireRole('agent')
+    ctx = await requireRole('agent')
   } catch (err) {
     return toErrorResponse(err)
   }
-
-  const user = await requireUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { error } = await supabaseAdmin()
     .from('automations')
     .delete()
     .eq('id', id)
-    .eq('user_id', user.id)
+    .eq('account_id', ctx.accountId)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })
 }
