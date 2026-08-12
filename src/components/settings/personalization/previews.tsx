@@ -97,16 +97,18 @@ export function BannerMock({ bannerPath }: { bannerPath: string | null }) {
       </div>
     );
   }
+  // Same natural aspect-ratio as the real banner — height follows the
+  // uploaded image, so the preview never crops either.
   return (
-    <div className="relative h-28 overflow-hidden rounded-xl">
+    <div className="border-border relative w-full overflow-hidden rounded-xl border">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={brandAssetPathUrl(bannerPath)}
         alt=""
-        className="absolute inset-0 h-full w-full object-cover"
+        className="block h-auto max-h-[420px] w-full object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-      <div className="absolute bottom-3 left-4">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+      <div className="pointer-events-none absolute bottom-3 left-4">
         <p className="text-sm font-semibold text-white">Bem-vindo!</p>
         <p className="text-xs text-white/80">Sua operação em um só lugar</p>
       </div>

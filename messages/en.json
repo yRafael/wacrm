@@ -1767,7 +1767,7 @@
         "title": "Recommended image sizes",
         "format": "Accepted formats: PNG, JPG or WebP — up to 5 MB.",
         "logo": "Logo: square, 400×400 px, transparent background (PNG). Shown small in the sidebar.",
-        "banner": "Banner: 1920×480 px (4:1 ratio). Displayed full-width with a fixed height — keep important content centered.",
+        "banner": "Banner: full-width landscape, e.g. 1920×480 px (4:1). Height follows the image — never cropped. Keep important content centered.",
         "chat": "Chat background: landscape, 1600×900 px (16:9). Covers the whole conversation with center cropping.",
         "gallery": "Library images: no fixed size. If using as chat background, prefer landscape."
       },
