@@ -23,6 +23,57 @@ export const BRAND_MAX_BYTES = 5 * 1024 * 1024;
 /** Accepted mime-types — mirrors the bucket's allowed_mime_types. */
 export const BRAND_ACCEPT = 'image/png,image/jpeg,image/webp';
 
+export type BrandImageType = 'png' | 'jpeg' | 'webp';
+
+/** Mime for the only image types the `branding` bucket allows on upload. */
+export const BRAND_MIME_BY_TYPE: Record<BrandImageType, string> = {
+  png: 'image/png',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+};
+
+/**
+ * Identify the image format from its magic bytes (first 12 bytes).
+ * Returns null when the object is not a real PNG/JPEG/WebP. The asset
+ * proxy uses this so the served `Content-Type` comes from the ACTUAL
+ * bytes — never the file extension — and refuses to stream anything else.
+ * Pure + exported for unit tests.
+ */
+export function detectImageType(bytes: Uint8Array): BrandImageType | null {
+  if (bytes.length < 12) return null;
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a
+  ) {
+    return 'png';
+  }
+  // JPEG: FF D8 FF
+  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return 'jpeg';
+  }
+  // WebP: "RIFF" .... "WEBP"
+  if (
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return 'webp';
+  }
+  return null;
+}
+
 /**
  * Build the account-scoped object path for a branding upload. Pure +
  * exported so it can be unit-tested without Supabase. Bare names keep a

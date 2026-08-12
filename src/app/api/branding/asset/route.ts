@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentAccount, toErrorResponse } from '@/lib/auth/account';
 import { getBranding } from '@/lib/branding/queries';
+import {
+  BRAND_MIME_BY_TYPE,
+  detectImageType,
+} from '@/lib/branding/assets';
 
 // ============================================================
 // /api/branding/asset — the ONLY way the browser reads brand assets.
@@ -22,60 +26,23 @@ import { getBranding } from '@/lib/branding/queries';
 // is the source of truth for ownership.
 // ============================================================
 
-const MIME_BY_EXT: Record<string, string> = {
-  png: 'image/png',
-  jpg: 'image/jpeg',
-  jpeg: 'image/jpeg',
-  webp: 'image/webp',
-  svg: 'image/svg+xml',
-};
-
-async function resolveAccountId(
-  supabase: Awaited<ReturnType<typeof createClient>>
-) {
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return { accountId: null as string | null, status: 401 as const };
-  }
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('account_id')
-    .eq('user_id', user.id)
-    .maybeSingle();
-  const accountId = profile?.account_id as string | undefined;
-  if (!accountId) {
-    return { accountId: null as string | null, status: 403 as const };
-  }
-  return { accountId, status: 200 as const };
-}
-
-function contentTypeForPath(path: string, fallback: string): string {
-  const ext = path.split('.').pop()?.toLowerCase() ?? '';
-  return MIME_BY_EXT[ext] ?? fallback;
-}
-
 export async function GET(request: Request) {
+  // The account comes from the SESSION — `getCurrentAccount` resolves
+  // user → profile → account server-side and throws 401/403 for missing
+  // session/profile. Never from the URL: a caller can only ever reach
+  // assets under their own account folder.
+  let ctx;
+  try {
+    ctx = await getCurrentAccount();
+  } catch (err) {
+    return toErrorResponse(err);
+  }
+  const { supabase, accountId } = ctx;
+
   try {
     const url = new URL(request.url);
     const kind = url.searchParams.get('kind');
     const pathParam = url.searchParams.get('path');
-
-    const supabase = await createClient();
-    const { accountId, status } = await resolveAccountId(supabase);
-    if (status !== 200 || !accountId) {
-      return NextResponse.json(
-        {
-          error:
-            status === 401
-              ? 'Unauthorized'
-              : 'Your profile is not linked to an account.',
-        },
-        { status }
-      );
-    }
 
     // Resolve the object path from the request.
     let objectPath: string | null = null;
@@ -109,14 +76,23 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Not found' }, { status: 404 });
     }
 
-    const bytes = await data.arrayBuffer();
-    return new Response(new Uint8Array(bytes), {
+    // Content type comes from the real bytes. An object that isn't a
+    // valid PNG/JPEG/WebP is refused — combined with `nosniff` below,
+    // a stale or hand-placed file in the bucket can never be served as
+    // a different content type.
+    const bytes = new Uint8Array(await data.arrayBuffer());
+    const detected = detectImageType(bytes);
+    if (!detected) {
+      return NextResponse.json(
+        { error: 'Asset is not a valid image' },
+        { status: 415 }
+      );
+    }
+
+    return new Response(bytes, {
       status: 200,
       headers: {
-        'Content-Type': contentTypeForPath(
-          objectPath,
-          data.type || 'application/octet-stream'
-        ),
+        'Content-Type': BRAND_MIME_BY_TYPE[detected],
         'Cache-Control': 'public, max-age=3600',
         'X-Content-Type-Options': 'nosniff',
       },

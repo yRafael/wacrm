@@ -4,7 +4,9 @@ import {
   brandAssetPathUrl,
   brandAssetUrl,
   BRAND_MAX_BYTES,
+  BRAND_MIME_BY_TYPE,
   buildBrandAssetPath,
+  detectImageType,
 } from './assets';
 
 const ACCOUNT = '5f0b6e1c-9f2a-4d3b-8c7e-1a2b3c4d5e6f';
@@ -67,5 +69,60 @@ describe('brand URLs', () => {
 
   it('caps uploads at 5 MB', () => {
     expect(BRAND_MAX_BYTES).toBe(5 * 1024 * 1024);
+  });
+});
+
+// Real byte signatures — the proxy refuses anything that is not an actual
+// PNG/JPEG/WebP, so the mime served never comes from a file extension.
+const bytes = (arr: number[]) => new Uint8Array(arr);
+
+describe('detectImageType', () => {
+  it('detects PNG from its 8-byte signature', () => {
+    const png = bytes([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
+    ]);
+    expect(detectImageType(png)).toBe('png');
+  });
+
+  it('detects JPEG from its FF D8 FF marker', () => {
+    const jpeg = bytes([
+      0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46, 0x00, 0x01,
+    ]);
+    expect(detectImageType(jpeg)).toBe('jpeg');
+  });
+
+  it('detects WebP from the RIFF/WEBP container', () => {
+    const webp = bytes([
+      0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
+    ]);
+    expect(detectImageType(webp)).toBe('webp');
+  });
+
+  it('returns null for too-short buffers', () => {
+    expect(detectImageType(bytes([0x89, 0x50]))).toBeNull();
+    expect(detectImageType(new Uint8Array(0))).toBeNull();
+  });
+
+  it('refuses SVG — even with a .svg extension it is not a valid image', () => {
+    const svg = bytes([
+      0x3c, 0x73, 0x76, 0x67, 0x20, 0x78, 0x6d, 0x6c, 0x6e, 0x73, 0x3d, 0x22,
+    ]);
+    expect(detectImageType(svg)).toBeNull();
+  });
+
+  it('refuses an HTML polyglot / fake png', () => {
+    // <html>… bytes renamed to .png
+    const fake = bytes([
+      0x3c, 0x68, 0x74, 0x6d, 0x6c, 0x3e, 0x3c, 0x68, 0x65, 0x61, 0x64, 0x3e,
+    ]);
+    expect(detectImageType(fake)).toBeNull();
+  });
+});
+
+describe('BRAND_MIME_BY_TYPE', () => {
+  it('maps every detected type to its real mime', () => {
+    expect(BRAND_MIME_BY_TYPE.png).toBe('image/png');
+    expect(BRAND_MIME_BY_TYPE.jpeg).toBe('image/jpeg');
+    expect(BRAND_MIME_BY_TYPE.webp).toBe('image/webp');
   });
 });
