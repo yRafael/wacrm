@@ -1763,6 +1763,14 @@
         "failed": "Falha no envio",
         "hint": "PNG, JPG ou WebP, até 5 MB."
       },
+      "specs": {
+        "title": "Tamanho recomendado das imagens",
+        "format": "Formatos aceitos: PNG, JPG ou WebP — até 5 MB.",
+        "logo": "Logo: quadrado, 400×400 px, fundo transparente (PNG). Aparece pequena na barra lateral.",
+        "banner": "Banner: 1920×480 px (proporção 4:1). Exibido em largura total com altura fixa — conteúdo importante no centro.",
+        "chat": "Fundo do chat: paisagem, 1600×900 px (16:9). Cobre a conversa inteira com corte central.",
+        "gallery": "Imagens da biblioteca: sem tamanho fixo. Para usar como fundo do chat, prefira paisagem."
+      },
       "tabs": {
         "brand": "Marca",
         "colors": "Cores",

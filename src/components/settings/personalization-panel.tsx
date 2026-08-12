@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
   Image as ImageIcon,
+  Info,
   RotateCcw,
   Sparkles,
   Trash2,
@@ -126,6 +127,20 @@ function CardTitle({ children }: { children: React.ReactNode }) {
 
 function CardHint({ children }: { children: React.ReactNode }) {
   return <p className="text-muted-foreground mb-4 text-xs">{children}</p>;
+}
+
+/**
+ * Image-spec callout — the recommended size/format for each asset type,
+ * so clients create the image correctly the first time. Rendered as a
+ * subtle info box at the bottom of the relevant tab card.
+ */
+function SpecNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-muted/60 text-muted-foreground mt-4 flex items-start gap-2 rounded-lg p-3 text-xs leading-relaxed">
+      <Info className="mt-0.5 size-3.5 shrink-0" />
+      <div className="min-w-0 space-y-0.5">{children}</div>
+    </div>
+  );
 }
 
 function PresetSwatch({ css }: { css: string }) {
@@ -431,6 +446,10 @@ export function PersonalizationPanel() {
                 </p>
               </div>
             </div>
+            <SpecNote>
+              <p>{t('specs.logo')}</p>
+              <p>{t('specs.format')}</p>
+            </SpecNote>
           </Card>
 
           <Card>
@@ -579,6 +598,10 @@ export function PersonalizationPanel() {
             <p className="text-muted-foreground mt-3 text-xs">
               {t('uploads.hint')}
             </p>
+            <SpecNote>
+              <p>{t('specs.banner')}</p>
+              <p>{t('specs.format')}</p>
+            </SpecNote>
           </Card>
         </TabsContent>
 
@@ -639,6 +662,10 @@ export function PersonalizationPanel() {
                   >
                     {t('chat.bgUpload')}
                   </ImagePickerButton>
+                  <SpecNote>
+                    <p>{t('specs.chat')}</p>
+                    <p>{t('specs.format')}</p>
+                  </SpecNote>
                   {bg.path && (
                     <div className="flex items-center gap-3">
                       <div className="border-border h-16 w-24 shrink-0 overflow-hidden rounded-lg border">
@@ -826,6 +853,10 @@ export function PersonalizationPanel() {
                 {t('gallery.upload')}
               </ImagePickerButton>
             </div>
+            <SpecNote>
+              <p>{t('specs.gallery')}</p>
+              <p>{t('specs.format')}</p>
+            </SpecNote>
             {gallery.length === 0 ? (
               <p className="bg-muted/60 text-muted-foreground rounded-lg p-4 text-center text-xs">
                 {t('gallery.empty')}
