@@ -1,0 +1,12 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm install && npx esbuild src/whatsapp/worker.ts --bundle --platform=node --format=cjs --conditions=import --outfile=.wa/worker.cjs --sourcemap --log-level=warning"
+  },
+  "deploy": {
+    "startCommand": "node .wa/worker.cjs",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}

@@ -8,14 +8,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Flame, UsersRound } from 'lucide-react';
+import AuthLayout from '@/components/auth/auth-layout';
+import { UsersRound } from 'lucide-react';
 
 // `useSearchParams` opts the component out of static prerendering
 // unless it sits under a Suspense boundary. We split the form into
@@ -49,13 +43,19 @@ function LoginPageInner() {
     setError(null);
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+    // Server-side login with per-IP rate limiting (brute-force protection).
+    // The API route calls supabase.auth.signInWithPassword() and returns
+    // a generic error message to avoid leaking whether the email exists.
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     });
 
-    if (error) {
-      setError(error.message);
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error ?? 'Login failed');
       setLoading(false);
       return;
     }
@@ -75,102 +75,82 @@ function LoginPageInner() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4">
-      <div className="mb-6 flex flex-col items-center gap-1 text-center">
-        <div className="bg-primary/10 mb-1 flex h-12 w-12 items-center justify-center rounded-xl">
-          <Flame className="text-primary h-6 w-6" />
+    <AuthLayout
+      title={inviteToken ? t('titleAccept') : t('titleWelcome')}
+      description={inviteToken ? t('descAccept') : t('descWelcome')}
+    >
+      {inviteToken && (
+        <div className="bg-primary/10 mb-2 flex h-12 w-12 items-center justify-center rounded-xl">
+          <UsersRound className="text-primary h-6 w-6" />
         </div>
-        <span className="text-foreground text-lg font-bold tracking-wide">
-          FIRE PLAY
-        </span>
-        <span className="text-muted-foreground text-xs font-semibold tracking-[0.35em] uppercase">
-          Fire Workspace
-        </span>
-      </div>
-      <Card className="border-border bg-card w-full max-w-md">
-        <CardHeader className="items-center text-center">
-          {inviteToken && (
-            <div className="bg-primary/10 mb-2 flex h-12 w-12 items-center justify-center rounded-xl">
-              <UsersRound className="text-primary h-6 w-6" />
-            </div>
-          )}
-          <CardTitle className="text-foreground text-xl">
-            {inviteToken ? t('titleAccept') : t('titleWelcome')}
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            {inviteToken ? t('descAccept') : t('descWelcome')}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
-            {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
+      )}
+      <form onSubmit={handleLogin} className="flex flex-col gap-5">
+        {error && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email" className="text-muted-foreground">
-                {t('emailLabel')}
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder={t('emailPlaceholder')}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email" className="text-muted-foreground text-sm font-medium">
+            {t('emailLabel')}
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder={t('emailPlaceholder')}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="border-border/60 bg-white/[0.03] text-foreground placeholder:text-muted-foreground/50 focus-visible:border-primary/60 focus-visible:ring-primary/15 h-11 transition-colors"
+          />
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-muted-foreground">
-                  {t('passwordLabel')}
-                </Label>
-                <Link
-                  href="/forgot-password"
-                  className="text-primary hover:text-primary/80 text-sm"
-                >
-                  {t('forgotPassword')}
-                </Link>
-              </div>
-              <Input
-                id="password"
-                type="password"
-                placeholder={t('passwordPlaceholder')}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
-
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 mt-2 h-10 w-full disabled:opacity-50"
-            >
-              {loading ? t('signingIn') : t('signIn')}
-            </Button>
-          </form>
-
-          <p className="text-muted-foreground mt-6 text-center text-sm">
-            {t('noAccount')}{' '}
+        <div className="flex flex-col gap-2">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password" className="text-muted-foreground text-sm font-medium">
+              {t('passwordLabel')}
+            </Label>
             <Link
-              href={
-                inviteToken
-                  ? `/signup?invite=${encodeURIComponent(inviteToken)}`
-                  : '/signup'
-              }
-              className="text-primary hover:text-primary/80"
+              href="/forgot-password"
+              className="text-primary/80 hover:text-primary text-xs font-medium transition-colors"
             >
-              {t('createAccount')}
+              {t('forgotPassword')}
             </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+          </div>
+          <Input
+            id="password"
+            type="password"
+            placeholder={t('passwordPlaceholder')}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="border-border/60 bg-white/[0.03] text-foreground placeholder:text-muted-foreground/50 focus-visible:border-primary/60 focus-visible:ring-primary/15 h-11 transition-colors"
+          />
+        </div>
+
+        <Button
+          type="submit"
+          disabled={loading}
+          className="fire-gradient-btn text-white font-semibold mt-1 h-11 w-full rounded-lg text-sm tracking-wide shadow-[0_4px_20px_rgba(255,107,26,0.25)] transition-all hover:shadow-[0_4px_28px_rgba(255,107,26,0.35)] disabled:opacity-50"
+        >
+          {loading ? t('signingIn') : t('signIn')}
+        </Button>
+      </form>
+
+      <p className="text-muted-foreground/70 mt-8 text-center text-sm">
+        {t('noAccount')}{' '}
+        <Link
+          href={
+            inviteToken
+              ? `/signup?invite=${encodeURIComponent(inviteToken)}`
+              : '/signup'
+          }
+          className="text-primary hover:text-primary/80 font-medium transition-colors"
+        >
+          {t('createAccount')}
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

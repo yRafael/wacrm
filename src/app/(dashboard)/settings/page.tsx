@@ -12,6 +12,7 @@ import { ProfileForm } from '@/components/settings/profile-form';
 import { SecurityPanel } from '@/components/settings/security-panel';
 import { AppearancePanel } from '@/components/settings/appearance-panel';
 import { WhatsAppSessions } from '@/components/settings/whatsapp-sessions';
+import { MercadoPagoPanel } from '@/components/settings/mercado-pago-panel';
 import { TemplatesPlaceholder } from '@/components/settings/templates-placeholder';
 import { QuickRepliesManager } from '@/components/settings/quick-replies-manager';
 import { FieldsAndTagsPanel } from '@/components/settings/fields-and-tags-panel';
@@ -77,6 +78,7 @@ function SettingsPageInner() {
     security: <SecurityPanel />,
     appearance: <AppearancePanel />,
     whatsapp: <WhatsAppSessions />,
+    'mercado-pago': <MercadoPagoPanel />,
     templates: <TemplatesPlaceholder />,
     'quick-replies': <QuickRepliesManager />,
     fields: <FieldsAndTagsPanel />,

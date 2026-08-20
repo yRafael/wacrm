@@ -155,7 +155,9 @@ export default function PulsePage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-foreground text-2xl font-bold">{t('title')}</h1>
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">
+          <span className="fire-gradient-text">{t('title')}</span>
+        </h1>
         <p className="text-muted-foreground mt-1 text-sm">{t('description')}</p>
       </div>
 
@@ -172,24 +174,28 @@ export default function PulsePage() {
               subtitle={t('metrics.atendimentoSubtitle', {
                 count: metrics.atendimentoAguardando,
               })}
+              variant="pulse"
             />
             <MetricCard
               title={t('metrics.renovacoes')}
               value={metrics.renovacoesHoje.toLocaleString()}
               icon={RefreshCw}
               subtitle={t('metrics.renovacoesSubtitle')}
+              variant="pulse"
             />
             <MetricCard
               title={t('metrics.vencendo')}
               value={metrics.vencendoHoje.toLocaleString()}
               icon={Clock3}
               subtitle={vencendoSubtitle}
+              variant="pulse"
             />
             <MetricCard
               title={t('metrics.alertas')}
               value={unreadAlerts.toLocaleString()}
               icon={AlertTriangle}
               subtitle={t('metrics.alertasSubtitle')}
+              variant="pulse"
             />
           </>
         )}
@@ -290,24 +296,28 @@ export default function PulsePage() {
                   value={formatCurrency(metrics.vendasDoMes, defaultCurrency)}
                   icon={TrendingUp}
                   subtitle={t('metrics.vendasMesSub')}
+                  variant="pulse"
                 />
                 <MetricCard
                   title={t('metrics.valorRecebido')}
                   value={formatCurrency(metrics.valorRecebido, defaultCurrency)}
                   icon={Wallet}
                   subtitle={t('metrics.valorRecebidoSub')}
+                  variant="pulse"
                 />
                 <MetricCard
                   title={t('metrics.renovacoesMes')}
                   value={metrics.renovacoesMes.toLocaleString()}
                   icon={RefreshCw}
                   subtitle={t('metrics.renovacoesMesSub')}
+                  variant="pulse"
                 />
                 <MetricCard
                   title={t('metrics.ticketMedio')}
                   value={formatCurrency(metrics.ticketMedio, defaultCurrency)}
                   icon={Receipt}
                   subtitle={t('metrics.ticketMedioSub')}
+                  variant="pulse"
                 />
               </>
             )}

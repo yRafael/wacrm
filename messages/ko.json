@@ -553,6 +553,7 @@
       "iptvTab": {
         "credential": "IPTV 자격 증명",
         "noCredential": "활성 자격 증명 없음",
+        "server": "서버",
         "username": "사용자 이름",
         "expiresAt": "만료일",
         "panelType": "패널",
@@ -571,7 +572,10 @@
         "renewals": "갱신",
         "noRenewals": "아직 갱신이 없습니다",
         "firstRenewal": "첫 갱신",
-        "lastRenewal": "마지막 갱신"
+        "lastRenewal": "마지막 갱신",
+        "sendReminder": "만료 알림 보내기",
+        "reminderSent": "알림이 성공적으로 전송되었습니다!",
+        "reminderFailed": "알림 전송 실패: {reason}"
       },
       "sendTemplateBtn": "템플릿 보내기",
       "saveChangesBtn": "변경 사항 저장",
@@ -1477,7 +1481,7 @@
       "labelTooLong": "라벨은 {max}자 이하여야 합니다",
       "copied": "초대 링크가 복사되었습니다",
       "clipboardBlocked": "클립보드 접근이 차단되었습니다 — 링크를 직접 복사하세요",
-      "whatsappMessage": "이 링크(유효 기간 {expiresInDays}일)로 wacrm의 {accountName}에 참여하세요: {url}"
+      "whatsappMessage": "이 링크(유효 기간 {expiresInDays}일)로 Fire Workspace의 {accountName}에 참여하세요: {url}"
     },
     "tagsAndFields": {
       "title": "필드 & 태그",
@@ -1588,8 +1592,8 @@
       "saveResubmit": "저장 & 재제출",
       "submitApproval": "승인 요청",
       "deleteDialogTitle": "템플릿을 삭제하시겠습니까?",
-      "deleteMetaDesc": "\"{name}\"이(가) Meta와 wacrm에서 삭제됩니다. 이 템플릿을 사용하는 활성 브로드캐스트는 다음 전송부터 실패하기 시작합니다. 되돌릴 수 없습니다.",
-      "deleteLocalDesc": "\"{name}\"이(가) wacrm에서 삭제됩니다. Meta에 제출된 적이 없으므로 별도의 원격 정리가 필요하지 않습니다.",
+      "deleteMetaDesc": "\"{name}\"이(가) Meta와 Fire Workspace에서 삭제됩니다. 이 템플릿을 사용하는 활성 브로드캐스트는 다음 전송부터 실패하기 시작합니다. 되돌릴 수 없습니다.",
+      "deleteLocalDesc": "\"{name}\"이(가) Fire Workspace에서 삭제됩니다. Meta에 제출된 적이 없으므로 별도의 원격 정리가 필요하지 않습니다.",
       "deleting": "삭제 중…",
       "delete": "삭제",
       "toastLoadFailed": "템플릿을 불러오지 못했습니다",
@@ -1630,7 +1634,7 @@
       "notConnected": "연결되지 않음",
       "connectedDesc": "액세스 토큰으로 Meta 인증이 완료되었습니다. 웹훅이 실제로 연결되었는지는 아래 등록 상태를 확인하세요.",
       "notConnectedDesc": "아래에서 Meta API 자격 증명을 설정해 WhatsApp 비즈니스 계정을 연결하세요.",
-      "registered": "등록됨 — Meta가 wacrm으로 이벤트를 전달합니다",
+      "registered": "등록됨 — Meta가 Fire Workspace으로 이벤트를 전달합니다",
       "notRegistered": "등록되지 않음 — Meta가 이벤트를 전달하지 않습니다",
       "verifyWithMeta": "Meta로 확인",
       "subscribedSince": "{date}부터 구독 중입니다. 이벤트가 더 이상 도착하지 않으면 Meta로 확인을 클릭하세요.",
@@ -1654,7 +1658,7 @@
       "twoStepPin": "2단계 인증 PIN",
       "optional": "(선택)",
       "pinPlaceholder": "Meta WhatsApp 관리자에서 발급받은 6자리 PIN",
-      "pinHint": "프로덕션 번호의 수신 메시지를 연결하려면 필요합니다. Meta 비즈니스 관리자 → WhatsApp 계정 → 전화번호 → 2단계 인증에서 설정한 뒤 여기에 붙여넣으면 wacrm이 해당 번호를 구독할 수 있습니다 — 그렇지 않으면 Meta는 마지막으로 이 번호를 등록한 앱으로 수신 이벤트를 보냅니다(공유 WABA 하의 두 번째 번호에서 흔히 발생하는 증상입니다). Meta 테스트 번호는 PIN이 없고 이미 등록되어 있으므로 이 필드를 비워두세요. 비워두면 기존 등록도 그대로 유지됩니다.",
+      "pinHint": "프로덕션 번호의 수신 메시지를 연결하려면 필요합니다. Meta 비즈니스 관리자 → WhatsApp 계정 → 전화번호 → 2단계 인증에서 설정한 뒤 여기에 붙여넣으면 Fire Workspace이 해당 번호를 구독할 수 있습니다 — 그렇지 않으면 Meta는 마지막으로 이 번호를 등록한 앱으로 수신 이벤트를 보냅니다(공유 WABA 하의 두 번째 번호에서 흔히 발생하는 증상입니다). Meta 테스트 번호는 PIN이 없고 이미 등록되어 있으므로 이 필드를 비워두세요. 비워두면 기존 등록도 그대로 유지됩니다.",
       "webhookTitle": "웹훅 설정",
       "webhookDesc": "Meta 앱 대시보드의 웹훅 콜백으로 이 URL을 사용하세요.",
       "webhookUrl": "웹훅 콜백 URL",
@@ -1715,6 +1719,18 @@
       "lastActivity": "활동 {time}",
       "neverActive": "아직 활동 없음",
       "error": "오류: {error}",
+      "errorLoggedOut": "전화에서 세션 종료됨 — 새 QR 코드를 스캔하세요",
+      "errorConnectionReplaced": "다른 기기에서 세션 교체됨 — 새 QR 코드를 스캔하세요",
+      "errorConnectionClosed": "연결 종료 — 자동 재연결 중",
+      "errorConnectionLost": "연결 끊어짐 — 자동 재연결 중",
+      "errorTimedOut": "시간 초과 — 자동 재연결 중",
+      "errorRestartRequired": "재시작 필요 — 재연결 중",
+      "errorBadSession": "세션 손상 — 새 QR 코드를 스캔하세요",
+      "errorForbidden": "WhatsApp에서 번호 차단됨 — 휴대전화 앱을 확인하세요",
+      "errorMaxReconnect": "최대 재연결 시도 횟수 초과 — 새 QR 코드를 스캔하세요",
+      "errorReconnectGap": "메시지 손상 가능 — 연결 해제 중 {minutes}분 비활성",
+      "errorUnknown": "연결 오류 — 자동 재연결 중",
+      "flappingWarning": "불안정한 세션 — 지난 24시간 동안 {count}회 연결 해제",
       "refreshQr": "QR 새로고침",
       "reconnect": "재연결",
       "disconnect": "연결 해제",
@@ -1942,6 +1958,30 @@
       "title": "로그인 & 보안",
       "description": "비밀번호를 변경하고 기기에서 로그아웃하세요. 계정을 안전하게 유지하는 데 도움이 됩니다."
     },
+    "mercadoPago": {
+      "title": "메르카도 파고",
+      "description": "자동 결제를 위해 메르카도 파고 자격 증명을 구성하세요. 각 계정(리셀러)은 자체 통합이 필요합니다.",
+      "configured": "자격 증명 구성됨",
+      "lastUpdated": "마지막 업데이트: {date}",
+      "update": "업데이트",
+      "required": "메르카도 파고 자격 증명 필요",
+      "requiredDescription": "구독을 만들고 고객에게 청구하려면 아래에 메르카도 파고 액세스 토큰을 설정하세요.",
+      "accessTokenLabel": "액세스 토큰",
+      "accessTokenPlaceholder": "APP_USR-...",
+      "accessTokenHelp": "메르카도 파고 액세스 토큰입니다.",
+      "learnMore": "획득 방법 알아보기",
+      "webhookSecretLabel": "웹훅 시크릿 (선택)",
+      "webhookSecretPlaceholder": "웹훅 시크릿",
+      "webhookSecretHelp": "웹훅 서명을 검증하는 데 사용됩니다. 구성하지 않으면 검증이 건너뜁니다(샌드박스 전용).",
+      "save": "자격 증명 저장",
+      "saving": "저장 중…",
+      "saved": "자격 증명이 성공적으로 저장되었습니다",
+      "saveError": "자격 증명 저장 오류",
+      "deleteConfirm": "메르카도 파고 자격 증명을 제거하시겠습니까?",
+      "deleted": "자격 증명 제거됨",
+      "deleteError": "자격 증명 제거 오류",
+      "cancel": "취소"
+    },
     "apiKeys": {
       "title": "API 키",
       "description": "키는 공개 REST API(<apiCode>/api/v1</apiCode>)를 인증해 직접 자동화를 구축할 수 있게 해줍니다. <headerCode>Authorization: Bearer &lt;key&gt;</headerCode> 형식으로 전송하세요.",
@@ -2023,7 +2063,7 @@
     },
     "aiConfig": {
       "title": "에이전트 설정",
-      "description": "직접 발급받은 OpenAI 또는 Anthropic 키를 사용하세요. wacrm은 회원님의 키로 공급자에 직접 요청하므로 좌석당 AI 비용이 없고 데이터도 온전히 회원님의 것입니다. 인박스의 AI 답장 초안, 자동 응답 봇, 플레이그라운드에 사용됩니다.",
+      "description": "직접 발급받은 OpenAI 또는 Anthropic 키를 사용하세요. Fire Workspace은 회원님의 키로 공급자에 직접 요청하므로 좌석당 AI 비용이 없고 데이터도 온전히 회원님의 것입니다. 인박스의 AI 답장 초안, 자동 응답 봇, 플레이그라운드에 사용됩니다.",
       "adminOnlyConfig": "관리자와 소유자만 AI 설정을 변경할 수 있습니다.",
       "loadFailed": "AI 설정을 불러오지 못했습니다",
       "providerAndKey": "공급자 & 키",
@@ -2117,7 +2157,32 @@
     "openReceivables": "미결제 수금",
     "delinquency": "연체율",
     "arrears": "연체",
-    "arrearsSub": "연체된 결제 {count}건"
+    "arrearsSub": "연체된 결제 {count}건",
+    "structure": {
+      "title": "IPTV 구조",
+      "totalMonthlyCost": "월간 비용",
+      "servers": "서버",
+      "panels": "패널",
+      "others": "기타",
+      "costsTitle": "구조 비용",
+      "costsSub": "서버, 패널 및 인프라의 고정 비용.",
+      "addCost": "비용 추가",
+      "addCostSub": "서버, 패널 또는 기타 인프라 항목의 비용을 등록하세요.",
+      "colName": "이름",
+      "colType": "유형",
+      "colCost": "금액",
+      "colCycle": "주기",
+      "colMonthly": "월간 환산",
+      "colCapacity": "용량",
+      "notes": "메모",
+      "notesPlaceholder": "선택사항",
+      "cancel": "취소",
+      "created": "비용이 추가되었습니다!",
+      "deleted": "비용이 삭제되었습니다",
+      "error": "비용 저장 오류",
+      "empty": "등록된 비용이 없습니다. 서버, 패널 및 기타 인프라 비용을 추가하세요.",
+      "noPermission": "관리자만 비용을 관리할 수 있습니다."
+    }
   },
   "Renewals": {
     "title": "갱신",
@@ -2179,7 +2244,11 @@
       "automatic": "자동",
       "promotional": "프로모션",
       "courtesy": "우대"
-    }
+    },
+    "selectAll": "전체 선택",
+    "deselectAll": "전체 선택 해제",
+    "sendReminders": "{count}건의 알림 보내기",
+    "batchQueued": "{count}건의 알림이 대기열에 추가됨"
   },
   "Clients": {
     "title": "클라이언트",
@@ -2216,6 +2285,7 @@
     "colUsername": "IPTV 사용자",
     "colPlan": "플랜",
     "colServer": "서버",
+    "colPrice": "가격",
     "colExpires": "만료일",
     "colStatus": "상태",
     "colNotes": "메모",
@@ -2223,7 +2293,9 @@
     "statusExpired": "만료",
     "statusRevoked": "해지",
     "empty": "검색 또는 필터에 해당하는 구독이 없습니다.",
-    "noName": "이름 없음"
+    "noName": "이름 없음",
+    "loadError": "구독을 불러올 수 없습니다.",
+    "retry": "다시 시도"
   },
   "Pulse": {
     "title": "🔥 Fire Pulse",

@@ -7,14 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Flame, CheckCircle, UsersRound } from 'lucide-react';
+import AuthLayout from '@/components/auth/auth-layout';
 
 // `useSearchParams` opts the component out of static prerendering
 // unless wrapped in Suspense — same pattern as /login.
@@ -91,157 +84,149 @@ function SignupPageInner() {
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <Card className="border-border bg-card w-full max-w-md">
-          <CardHeader className="items-center text-center">
-            <div className="bg-primary/10 mb-2 flex h-12 w-12 items-center justify-center rounded-xl">
-              <CheckCircle className="text-primary h-6 w-6" />
-            </div>
-            <CardTitle className="text-foreground text-xl">
-              Verifique seu e-mail
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              Enviamos um link de confirmação para{' '}
-              <span className="text-foreground">{email}</span>. Verifique sua
-              caixa de entrada e clique no link para confirmar sua conta.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link
-              href={
-                inviteToken
-                  ? `/login?invite=${encodeURIComponent(inviteToken)}`
-                  : '/login'
-              }
+      <AuthLayout title="Verifique seu e-mail" description="">
+        <div className="flex flex-col items-center text-center gap-4">
+          <div className="bg-primary/10 flex h-12 w-12 items-center justify-center rounded-xl">
+            <svg
+              className="h-6 w-6 text-primary"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
             >
-              <Button
-                variant="outline"
-                className="border-border text-muted-foreground hover:bg-muted hover:text-foreground w-full"
-              >
-                Voltar para o login
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m5-2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+          </div>
+          <p className="text-muted-foreground text-sm">
+            Enviamos um link de confirmação para{' '}
+            <span className="text-foreground">{email}</span>. Verifique sua
+            caixa de entrada e clique no link para confirmar sua conta.
+          </p>
+          <Link
+            href={
+              inviteToken
+                ? `/login?invite=${encodeURIComponent(inviteToken)}`
+                : '/login'
+            }
+          >
+            <Button
+              variant="outline"
+              className="border-border text-muted-foreground hover:bg-muted hover:text-foreground w-full"
+            >
+              Voltar para o login
+            </Button>
+          </Link>
+        </div>
+      </AuthLayout>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center px-4">
-      <Card className="border-border bg-card w-full max-w-md">
-        <CardHeader className="items-center text-center">
-          <div className="bg-primary/10 mb-2 flex h-12 w-12 items-center justify-center rounded-xl">
-            {inviteToken ? (
-              <UsersRound className="text-primary h-6 w-6" />
-            ) : (
-              <Flame className="text-primary h-6 w-6" />
-            )}
+    <AuthLayout
+      title={inviteToken ? 'Criar conta e entrar' : 'Criar conta'}
+      description={
+        inviteToken
+          ? 'Verifique seu e-mail e depois aceite o convite para entrar na sua equipe.'
+          : 'Comece com o CRM e automação para WhatsApp.'
+      }
+    >
+      <form onSubmit={handleSignup} className="flex flex-col gap-4">
+        {error && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
           </div>
-          <CardTitle className="text-foreground text-xl">
-            {inviteToken ? 'Criar conta e entrar' : 'Criar conta'}
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            {inviteToken
-              ? 'Verifique seu e-mail e depois aceite o convite para entrar na sua equipe.'
-              : 'Comece com o CRM Template para WhatsApp'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignup} className="flex flex-col gap-4">
-            {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
+        )}
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="fullName" className="text-muted-foreground">
-                Nome completo
-              </Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="João da Silva"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="fullName" className="text-muted-foreground text-sm font-medium">
+            Nome completo
+          </Label>
+          <Input
+            id="fullName"
+            type="text"
+            placeholder="João da Silva"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+            className="border-border/60 bg-white/[0.03] text-foreground placeholder:text-muted-foreground/50 focus-visible:border-primary/60 focus-visible:ring-primary/15 h-11 transition-colors"
+          />
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email" className="text-muted-foreground">
-                E-mail
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="voce@exemplo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email" className="text-muted-foreground text-sm font-medium">
+            E-mail
+          </Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="voce@exemplo.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="border-border/60 bg-white/[0.03] text-foreground placeholder:text-muted-foreground/50 focus-visible:border-primary/60 focus-visible:ring-primary/15 h-11 transition-colors"
+          />
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="password" className="text-muted-foreground">
-                Senha
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Pelo menos 6 caracteres"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="password" className="text-muted-foreground text-sm font-medium">
+            Senha
+          </Label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="Pelo menos 6 caracteres"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            minLength={6}
+            className="border-border/60 bg-white/[0.03] text-foreground placeholder:text-muted-foreground/50 focus-visible:border-primary/60 focus-visible:ring-primary/15 h-11 transition-colors"
+          />
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <Label
-                htmlFor="confirmPassword"
-                className="text-muted-foreground"
-              >
-                Confirmar senha
-              </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Repita sua senha"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label
+            htmlFor="confirmPassword"
+            className="text-muted-foreground text-sm font-medium"
+          >
+            Confirmar senha
+          </Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="Repita sua senha"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            className="border-border/60 bg-white/[0.03] text-foreground placeholder:text-muted-foreground/50 focus-visible:border-primary/60 focus-visible:ring-primary/15 h-11 transition-colors"
+          />
+        </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-primary text-primary-foreground hover:bg-primary/90 mt-2 h-10 w-full disabled:opacity-50"
-            >
-              {loading ? 'Criando conta...' : 'Criar conta'}
-            </Button>
-          </form>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="fire-gradient-btn text-white font-semibold mt-1 h-11 w-full rounded-lg text-sm tracking-wide shadow-[0_4px_20px_rgba(255,107,26,0.25)] transition-all hover:shadow-[0_4px_28px_rgba(255,107,26,0.35)] disabled:opacity-50"
+        >
+          {loading ? 'Criando conta...' : 'Criar conta'}
+        </Button>
+      </form>
 
-          <p className="text-muted-foreground mt-6 text-center text-sm">
-            Já tem uma conta?{' '}
-            <Link
-              href={
-                inviteToken
-                  ? `/login?invite=${encodeURIComponent(inviteToken)}`
-                  : '/login'
-              }
-              className="text-primary hover:text-primary/80"
-            >
-              Entrar
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+      <p className="text-muted-foreground/70 mt-8 text-center text-sm">
+        Já tem uma conta?{' '}
+        <Link
+          href={
+            inviteToken
+              ? `/login?invite=${encodeURIComponent(inviteToken)}`
+              : '/login'
+          }
+          className="text-primary hover:text-primary/80 font-medium transition-colors"
+        >
+          Entrar
+        </Link>
+      </p>
+    </AuthLayout>
   );
 }

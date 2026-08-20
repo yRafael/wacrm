@@ -19,7 +19,10 @@ import { useTranslations } from 'next-intl';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/use-auth';
 import { formatRelative } from '@/lib/automations/trigger-meta';
-import type { SessionStatus, WhatsAppSessionRow } from '@/lib/whatsapp/baileys/types';
+import type {
+  SessionStatus,
+  WhatsAppSessionRow,
+} from '@/lib/whatsapp/baileys/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,7 +49,11 @@ type BusyAction = 'refresh' | 'disconnect' | 'delete' | null;
  */
 const STATUS_META: Record<
   SessionStatus,
-  { chip: 'ok' | 'warn' | 'muted'; icon: typeof CheckCircle2; className?: string }
+  {
+    chip: 'ok' | 'warn' | 'muted';
+    icon: typeof CheckCircle2;
+    className?: string;
+  }
 > = {
   CONNECTED: { chip: 'ok', icon: CheckCircle2 },
   CONNECTING: { chip: 'warn', icon: Loader2 },
@@ -104,6 +111,28 @@ export function WhatsAppSessions() {
   // churn on tab refocus) — mirrors the whatsapp-config guard.
   const loadedAccountIdRef = useRef<string | null>(null);
 
+  /** Map worker error keys to user-friendly i18n messages. */
+  function translateError(errorKey: string): string {
+    const map: Record<string, string> = {
+      logged_out: t('errorLoggedOut'),
+      connection_replaced: t('errorConnectionReplaced'),
+      connection_closed: t('errorConnectionClosed'),
+      connection_lost: t('errorConnectionLost'),
+      timed_out: t('errorTimedOut'),
+      restart_required: t('errorRestartRequired'),
+      bad_session: t('errorBadSession'),
+      forbidden: t('errorForbidden'),
+      unavailable_service: t('errorConnectionClosed'),
+      max_reconnect_attempts: t('errorMaxReconnect'),
+    };
+    // Dynamic keys: reconnect_gap_<N>min
+    const gapMatch = errorKey.match(/^reconnect_gap_(\d+)min$/);
+    if (gapMatch) {
+      return t('errorReconnectGap', { minutes: gapMatch[1] });
+    }
+    return map[errorKey] ?? t('error', { error: errorKey });
+  }
+
   const load = useCallback(async () => {
     if (!accountId) return;
     const { data, error } = await supabase
@@ -144,7 +173,7 @@ export function WhatsAppSessions() {
           table: 'whatsapp_sessions',
           filter: `account_id=eq.${accountId}`,
         },
-        () => void load(),
+        () => void load()
       )
       .subscribe();
 
@@ -196,14 +225,18 @@ export function WhatsAppSessions() {
           action === 'delete'
             ? `/api/whatsapp/sessions/${session.id}`
             : `/api/whatsapp/sessions/${session.id}/${action}`;
-        const res = await fetch(path, { method: 'POST' });
+        const res = await fetch(path, { method: action === 'delete' ? 'DELETE' : 'POST' });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
           toast.error(data.error ?? t('actionFailed'));
           return;
         }
         toast.success(
-          action === 'refresh' ? t('reconnected') : action === 'disconnect' ? t('disconnected') : t('deleted'),
+          action === 'refresh'
+            ? t('reconnected')
+            : action === 'disconnect'
+              ? t('disconnected')
+              : t('deleted')
         );
         await load();
       } catch {
@@ -216,7 +249,7 @@ export function WhatsAppSessions() {
         });
       }
     },
-    [load, t],
+    [load, t]
   );
 
   if (authLoading) {
@@ -224,7 +257,7 @@ export function WhatsAppSessions() {
       <section className="animate-in fade-in-50 duration-200">
         <SettingsPanelHead title={t('title')} description={t('description')} />
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="size-6 animate-spin text-primary" />
+          <Loader2 className="text-primary size-6 animate-spin" />
         </div>
       </section>
     );
@@ -246,22 +279,28 @@ export function WhatsAppSessions() {
       />
 
       {!canEditSettings ? (
-        <Alert className="mb-4 bg-card border-border">
+        <Alert className="bg-card border-border mb-4">
           <AlertTriangle className="size-4" />
-          <AlertTitle className="text-foreground">{t('readOnlyTitle')}</AlertTitle>
-          <AlertDescription className="text-muted-foreground">{t('readOnlyDesc')}</AlertDescription>
+          <AlertTitle className="text-foreground">
+            {t('readOnlyTitle')}
+          </AlertTitle>
+          <AlertDescription className="text-muted-foreground">
+            {t('readOnlyDesc')}
+          </AlertDescription>
         </Alert>
       ) : null}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="size-6 animate-spin text-primary" />
+          <Loader2 className="text-primary size-6 animate-spin" />
         </div>
       ) : sessions.length === 0 ? (
         <Alert className="bg-card border-border">
           <Smartphone className="size-4" />
           <AlertTitle className="text-foreground">{t('emptyTitle')}</AlertTitle>
-          <AlertDescription className="text-muted-foreground">{t('emptyDesc')}</AlertDescription>
+          <AlertDescription className="text-muted-foreground">
+            {t('emptyDesc')}
+          </AlertDescription>
         </Alert>
       ) : (
         <div className="space-y-3">
@@ -281,31 +320,47 @@ export function WhatsAppSessions() {
               session.status === 'RECONNECTING' ||
               session.status === 'CONNECTING';
             const showQr = pairing && !!session.qr_data;
-            const spinning = session.status === 'CONNECTING' || session.status === 'RECONNECTING';
+            const spinning =
+              session.status === 'CONNECTING' ||
+              session.status === 'RECONNECTING';
             return (
               <Card key={session.id} className="p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="truncate text-sm font-semibold text-foreground">
+                      <span className="text-foreground truncate text-sm font-semibold">
                         {session.name}
                       </span>
-                      <SettingsChip variant={meta.chip} className={meta.className}>
-                        <StatusIcon className={spinning ? 'animate-spin' : undefined} />
+                      <SettingsChip
+                        variant={meta.chip}
+                        className={meta.className}
+                      >
+                        <StatusIcon
+                          className={spinning ? 'animate-spin' : undefined}
+                        />
                         {t(`status.${session.status}`)}
                       </SettingsChip>
                     </div>
-                    <div className="mt-1 flex items-center gap-3 text-xs text-muted-foreground">
+                    <div className="text-muted-foreground mt-1 flex items-center gap-3 text-xs">
                       {session.phone ? <span>{session.phone}</span> : null}
                       <span>
                         {session.last_activity
-                          ? t('lastActivity', { time: formatRelative(session.last_activity) })
+                          ? t('lastActivity', {
+                              time: formatRelative(session.last_activity),
+                            })
                           : t('neverActive')}
                       </span>
                     </div>
                     {session.last_error ? (
                       <p className="mt-1 text-xs text-red-500">
-                        {t('error', { error: session.last_error })}
+                        {translateError(session.last_error)}
+                      </p>
+                    ) : null}
+                    {(session.disconnect_count_24h ?? 0) >= 5 ? (
+                      <p className="mt-1 text-xs text-amber-500">
+                        {t('flappingWarning', {
+                          count: session.disconnect_count_24h,
+                        })}
                       </p>
                     ) : null}
                   </div>
@@ -326,7 +381,9 @@ export function WhatsAppSessions() {
                           ) : (
                             <RefreshCw className="size-3.5" />
                           )}
-                          {session.status === 'QR_CODE' ? t('refreshQr') : t('reconnect')}
+                          {session.status === 'QR_CODE'
+                            ? t('refreshQr')
+                            : t('reconnect')}
                         </Button>
                       ) : null}
                       {session.status === 'CONNECTED' ? (
@@ -363,18 +420,25 @@ export function WhatsAppSessions() {
                 </div>
 
                 {showQr ? (
-                  <div className="mt-4 flex flex-col items-center gap-2 rounded-lg border border-border bg-background p-4">
+                  <div className="border-border bg-background mt-4 flex flex-col items-center gap-2 rounded-lg border p-4">
                     {/* QR emitted by the worker; re-sent over Realtime on
                         every flip (pairing progresses → new QR). */}
                     <img
                       src={session.qr_data ?? ''}
                       alt="Código QR do WhatsApp"
-                      className={cn('size-44', session.status === 'QR_CODE' && 'animate-pulse')}
+                      className={cn(
+                        'size-44',
+                        session.status === 'QR_CODE' && 'animate-pulse'
+                      )}
                     />
-                    <p className="text-xs text-muted-foreground">{t('qrHint')}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {t('qrHint')}
+                    </p>
                     {session.qr_expires_at ? (
-                      <p className="text-xs text-muted-foreground">
-                        {t('qrExpires', { time: formatQrExpiry(session.qr_expires_at, now) })}
+                      <p className="text-muted-foreground text-xs">
+                        {t('qrExpires', {
+                          time: formatQrExpiry(session.qr_expires_at, now),
+                        })}
                       </p>
                     ) : null}
                   </div>
@@ -404,11 +468,23 @@ export function WhatsAppSessions() {
             />
           </div>
           <DialogFooter>
-            <Button variant="ghost" size="sm" onClick={() => setCreateOpen(false)}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setCreateOpen(false)}
+            >
               {t('cancel')}
             </Button>
-            <Button size="sm" disabled={creating} onClick={() => void createSession()}>
-              {creating ? <Loader2 className="size-4 animate-spin" /> : <Plus />}
+            <Button
+              size="sm"
+              disabled={creating}
+              onClick={() => void createSession()}
+            >
+              {creating ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Plus />
+              )}
               {t('create')}
             </Button>
           </DialogFooter>

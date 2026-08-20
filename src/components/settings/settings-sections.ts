@@ -4,6 +4,7 @@ import {
   FileText,
   KeyRound,
   LayoutGrid,
+  CreditCard,
   Palette,
   PlugZap,
   Shield,
@@ -28,6 +29,7 @@ export const SETTINGS_SECTIONS = [
   'security',
   'appearance',
   'whatsapp',
+  'mercado-pago',
   'templates',
   'quick-replies',
   'fields',
@@ -79,6 +81,12 @@ export const SECTION_META: Record<SettingsSection, SectionMeta> = {
     id: 'whatsapp',
     label: 'WhatsApp',
     icon: PlugZap,
+    group: 'workspace',
+  },
+  'mercado-pago': {
+    id: 'mercado-pago',
+    label: 'Mercado Pago',
+    icon: CreditCard,
     group: 'workspace',
   },
   templates: {

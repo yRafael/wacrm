@@ -553,6 +553,7 @@
       "iptvTab": {
         "credential": "IPTV Credential",
         "noCredential": "No active credential",
+        "server": "Server",
         "username": "Username",
         "expiresAt": "Expires",
         "panelType": "Panel",
@@ -571,7 +572,10 @@
         "renewals": "Renewals",
         "noRenewals": "No renewals yet",
         "firstRenewal": "First renewal",
-        "lastRenewal": "Last renewal"
+        "lastRenewal": "Last renewal",
+        "sendReminder": "Send expiration reminder",
+        "reminderSent": "Reminder sent successfully!",
+        "reminderFailed": "Failed to send reminder: {reason}"
       },
       "sendTemplateBtn": "Send template",
       "saveChangesBtn": "Save Changes",
@@ -1477,7 +1481,7 @@
       "labelTooLong": "Label must be {max} characters or fewer",
       "copied": "Invite link copied",
       "clipboardBlocked": "Clipboard blocked — copy the link manually",
-      "whatsappMessage": "Join {accountName} on wacrm using this link (valid for {expiresInDays} days): {url}"
+      "whatsappMessage": "Join {accountName} on Fire Workspace using this link (valid for {expiresInDays} days): {url}"
     },
     "tagsAndFields": {
       "title": "Fields & tags",
@@ -1588,8 +1592,8 @@
       "saveResubmit": "Save & Resubmit",
       "submitApproval": "Submit for Approval",
       "deleteDialogTitle": "Delete template?",
-      "deleteMetaDesc": "\"{name}\" will be deleted from Meta and from wacrm. Active broadcasts using this template will start failing on their next send. This can't be undone.",
-      "deleteLocalDesc": "\"{name}\" will be deleted from wacrm. It was never submitted to Meta, so no remote cleanup is needed.",
+      "deleteMetaDesc": "\"{name}\" will be deleted from Meta and from Fire Workspace. Active broadcasts using this template will start failing on their next send. This can't be undone.",
+      "deleteLocalDesc": "\"{name}\" will be deleted from Fire Workspace. It was never submitted to Meta, so no remote cleanup is needed.",
       "deleting": "Deleting…",
       "delete": "Delete",
       "toastLoadFailed": "Failed to load templates",
@@ -1630,7 +1634,7 @@
       "notConnected": "Not Connected",
       "connectedDesc": "Your access token authenticates with Meta. See Registration status below for whether webhooks are actually wired.",
       "notConnectedDesc": "Configure your Meta API credentials below to connect your WhatsApp Business account.",
-      "registered": "Registered — Meta will deliver events to wacrm",
+      "registered": "Registered — Meta will deliver events to Fire Workspace",
       "notRegistered": "Not registered — Meta will not deliver events",
       "verifyWithMeta": "Verify with Meta",
       "subscribedSince": "Subscribed since {date}. Click Verify with Meta if events stop arriving.",
@@ -1654,7 +1658,7 @@
       "twoStepPin": "Two-step verification PIN",
       "optional": "(optional)",
       "pinPlaceholder": "6-digit PIN from Meta WhatsApp Manager",
-      "pinHint": "Needed only to wire inbound messages for a production number. Set it in Meta Business Manager → WhatsApp Accounts → Phone Numbers → Two-step verification, then paste it here so wacrm can subscribe the number — otherwise Meta routes inbound events to whichever app last claimed it (the symptom that hits second numbers under a shared WABA). Meta test numbers have no PIN and are pre-registered — leave this blank for them. Leaving it blank also keeps an existing registration untouched.",
+      "pinHint": "Needed only to wire inbound messages for a production number. Set it in Meta Business Manager → WhatsApp Accounts → Phone Numbers → Two-step verification, then paste it here so Fire Workspace can subscribe the number — otherwise Meta routes inbound events to whichever app last claimed it (the symptom that hits second numbers under a shared WABA). Meta test numbers have no PIN and are pre-registered — leave this blank for them. Leaving it blank also keeps an existing registration untouched.",
       "webhookTitle": "Webhook Configuration",
       "webhookDesc": "Use this URL as your webhook callback in the Meta App Dashboard.",
       "webhookUrl": "Webhook Callback URL",
@@ -1715,6 +1719,18 @@
       "lastActivity": "Active {time}",
       "neverActive": "No activity yet",
       "error": "Error: {error}",
+      "errorLoggedOut": "Session ended on phone — scan a new QR code",
+      "errorConnectionReplaced": "Session replaced by another device — scan a new QR code",
+      "errorConnectionClosed": "Connection closed — reconnecting automatically",
+      "errorConnectionLost": "Connection lost — reconnecting automatically",
+      "errorTimedOut": "Timed out — reconnecting automatically",
+      "errorRestartRequired": "Restart required — reconnecting",
+      "errorBadSession": "Session corrupted — scan a new QR code",
+      "errorForbidden": "Number blocked by WhatsApp — check the phone app",
+      "errorMaxReconnect": "Max reconnect attempts exceeded — scan a new QR code",
+      "errorReconnectGap": "Possible message loss — {minutes}min of inactivity during disconnect",
+      "errorUnknown": "Connection error — reconnecting automatically",
+      "flappingWarning": "Unstable session — {count} disconnects in the last 24h",
       "refreshQr": "Refresh QR",
       "reconnect": "Reconnect",
       "disconnect": "Disconnect",
@@ -1943,6 +1959,30 @@
       "title": "Login & security",
       "description": "Change your password and sign out of your devices. These keep your account safe."
     },
+    "mercadoPago": {
+      "title": "Mercado Pago",
+      "description": "Configure your Mercado Pago credentials for automatic billing. Each account (reseller) must have their own integration.",
+      "configured": "Credentials configured",
+      "lastUpdated": "Last updated: {date}",
+      "update": "Update",
+      "required": "Mercado Pago credentials required",
+      "requiredDescription": "To create subscriptions and bill your customers, set up your Mercado Pago Access Token below.",
+      "accessTokenLabel": "Access Token",
+      "accessTokenPlaceholder": "APP_USR-...",
+      "accessTokenHelp": "Your Mercado Pago access token.",
+      "learnMore": "Learn how to get one",
+      "webhookSecretLabel": "Webhook Secret (optional)",
+      "webhookSecretPlaceholder": "Your webhook secret",
+      "webhookSecretHelp": "Used to validate webhook signatures. If not configured, validation is skipped (sandbox only).",
+      "save": "Save credentials",
+      "saving": "Saving…",
+      "saved": "Credentials saved successfully",
+      "saveError": "Error saving credentials",
+      "deleteConfirm": "Remove Mercado Pago credentials?",
+      "deleted": "Credentials removed",
+      "deleteError": "Error removing credentials",
+      "cancel": "Cancel"
+    },
     "apiKeys": {
       "title": "API keys",
       "description": "Keys authenticate the public REST API (<apiCode>/api/v1</apiCode>) so you can build your own automations. Send them as <headerCode>Authorization: Bearer &lt;key&gt;</headerCode>.",
@@ -2024,7 +2064,7 @@
     },
     "aiConfig": {
       "title": "Agent setup",
-      "description": "Bring your own OpenAI or Anthropic key. wacrm calls the provider directly with your key — no per-seat AI fees, and your data stays yours. This powers AI-drafted replies in the inbox, the auto-reply bot, and the Playground.",
+      "description": "Bring your own OpenAI or Anthropic key. Fire Workspace calls the provider directly with your key — no per-seat AI fees, and your data stays yours. This powers AI-drafted replies in the inbox, the auto-reply bot, and the Playground.",
       "adminOnlyConfig": "Only admins and owners can change the AI configuration.",
       "loadFailed": "Failed to load AI configuration",
       "providerAndKey": "Provider & key",
@@ -2118,7 +2158,32 @@
     "openReceivables": "Open receivables",
     "delinquency": "Delinquency",
     "arrears": "In arrears",
-    "arrearsSub": "{count} {count, plural, =1 {overdue payment} other {overdue payments}}"
+    "arrearsSub": "{count} {count, plural, =1 {overdue payment} other {overdue payments}}",
+    "structure": {
+      "title": "IPTV Structure",
+      "totalMonthlyCost": "Monthly cost",
+      "servers": "Servers",
+      "panels": "Panels",
+      "others": "Others",
+      "costsTitle": "Structure costs",
+      "costsSub": "Fixed costs for servers, panels and infrastructure.",
+      "addCost": "Add cost",
+      "addCostSub": "Register the cost of a server, panel or other infrastructure item.",
+      "colName": "Name",
+      "colType": "Type",
+      "colCost": "Amount",
+      "colCycle": "Cycle",
+      "colMonthly": "Monthly equiv.",
+      "colCapacity": "Capacity",
+      "notes": "Notes",
+      "notesPlaceholder": "Optional",
+      "cancel": "Cancel",
+      "created": "Cost added!",
+      "deleted": "Cost removed",
+      "error": "Error saving cost",
+      "empty": "No costs registered. Add servers, panels and other infrastructure costs.",
+      "noPermission": "Only admins can manage costs."
+    }
   },
   "Renewals": {
     "title": "Renewals",
@@ -2180,7 +2245,11 @@
       "automatic": "Automatic",
       "promotional": "Promotional",
       "courtesy": "Courtesy"
-    }
+    },
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "sendReminders": "Send {count} reminder(s)",
+    "batchQueued": "{count} reminder(s) queued"
   },
   "Clients": {
     "title": "Clients",
@@ -2217,6 +2286,7 @@
     "colUsername": "IPTV user",
     "colPlan": "Plan",
     "colServer": "Server",
+    "colPrice": "Price",
     "colExpires": "Expires",
     "colStatus": "Status",
     "colNotes": "Notes",
@@ -2224,7 +2294,9 @@
     "statusExpired": "Expired",
     "statusRevoked": "Revoked",
     "empty": "No subscription matches this search or filter.",
-    "noName": "Unnamed"
+    "noName": "Unnamed",
+    "loadError": "Could not load subscriptions.",
+    "retry": "Retry"
   },
   "Pulse": {
     "title": "🔥 Fire Pulse",
