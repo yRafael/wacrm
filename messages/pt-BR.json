@@ -18,6 +18,7 @@
     "title": "Fire Workspace",
     "dashboard": "Dashboard",
     "pulse": "🔥 Fire Pulse",
+    "radar": "📡 Fire Radar",
     "inbox": "Caixa de entrada",
     "queue": "Fila de atendimento",
     "notifications": "Notificações",
@@ -1728,6 +1729,7 @@
       "errorBadSession": "Sessão corrompida — escaneie um novo QR code",
       "errorForbidden": "Número bloqueado pelo WhatsApp — verifique o app no celular",
       "errorMaxReconnect": "Número de tentativas de reconexão excedido — escaneie um novo QR code",
+      "errorQrRenderFailed": "Falha ao gerar o QR code — tente reconectar",
       "errorReconnectGap": "Possível perda de mensagens — {minutes}min sem atividade durante desconexão",
       "errorUnknown": "Erro de conexão — reconectando automaticamente",
       "flappingWarning": "Sessão instável — {count} desconexões nas últimas 24h",
@@ -1756,6 +1758,7 @@
       "security": "Login e segurança",
       "appearance": "Aparência",
       "whatsapp": "WhatsApp",
+      "mercado-pago": "Mercado Pago",
       "templates": "Templates",
       "quick-replies": "Respostas rápidas",
       "fields": "Campos e tags",
@@ -1765,6 +1768,7 @@
       "api": "Chaves de API",
       "personalization": "Personalização"
     },
+    "settingsNav": "Seções de configurações",
     "personalization": {
       "title": "Personalização",
       "description": "Dê a sua marca à aparência do workspace — logo, nome, cores, banner, fundo do chat e muito mais. Tudo é por empresa e fica visível só para o seu time.",
@@ -1974,6 +1978,8 @@
       "webhookSecretLabel": "Webhook Secret (opcional)",
       "webhookSecretPlaceholder": "Seu webhook secret",
       "webhookSecretHelp": "Usado para validar assinaturas de webhooks. Se não configurado, validação será pulada (apenas sandbox).",
+      "webhookUrlLabel": "URL do Webhook",
+      "webhookUrlHelp": "Configure esta URL no painel do Mercado Pago (Seu negócio > Webhooks) para receber notificações de pagamento.",
       "save": "Salvar credenciais",
       "saving": "Salvando…",
       "saved": "Credenciais salvas com sucesso",
@@ -2299,7 +2305,7 @@
     "retry": "Tentar novamente"
   },
   "Pulse": {
-    "title": "🔥 Fire Pulse",
+    "title": "📡 Fire Radar",
     "description": "O que está acontecendo agora na sua operação.",
     "metrics": {
       "atendimento": "Atendimento",
@@ -2332,7 +2338,7 @@
       "ticketMedioSub": "por pagamento"
     },
     "metricGroups": {
-      "title": "Métricas do Fire Pulse",
+      "title": "Métricas do Fire Radar",
       "atendimento": "Atendimento",
       "clientes": "Clientes",
       "financeiro": "Financeiro"

@@ -18,6 +18,7 @@
     "title": "CRM Template for WhatsApp",
     "dashboard": "Dashboard",
     "pulse": "Pulse",
+    "radar": "📡 Fire Radar",
     "inbox": "Inbox",
     "queue": "Queue",
     "notifications": "Notifications",
@@ -1728,6 +1729,7 @@
       "errorBadSession": "Session corrupted — scan a new QR code",
       "errorForbidden": "Number blocked by WhatsApp — check the phone app",
       "errorMaxReconnect": "Max reconnect attempts exceeded — scan a new QR code",
+      "errorQrRenderFailed": "Failed to generate QR code — try reconnecting",
       "errorReconnectGap": "Possible message loss — {minutes}min of inactivity during disconnect",
       "errorUnknown": "Connection error — reconnecting automatically",
       "flappingWarning": "Unstable session — {count} disconnects in the last 24h",
@@ -1756,6 +1758,7 @@
       "security": "Login & security",
       "appearance": "Appearance",
       "whatsapp": "WhatsApp",
+      "mercado-pago": "Mercado Pago",
       "templates": "Templates",
       "quick-replies": "Quick replies",
       "fields": "Fields & tags",
@@ -1765,6 +1768,7 @@
       "api": "API keys",
       "personalization": "Personalization"
     },
+    "settingsNav": "Settings sections",
     "personalization": {
       "title": "Personalization",
       "description": "Give the workspace your company's look and feel — logo, name, colors, dashboard banner, chat background and more. Everything is per-company and only visible to your team.",
@@ -1974,6 +1978,8 @@
       "webhookSecretLabel": "Webhook Secret (optional)",
       "webhookSecretPlaceholder": "Your webhook secret",
       "webhookSecretHelp": "Used to validate webhook signatures. If not configured, validation is skipped (sandbox only).",
+      "webhookUrlLabel": "Webhook URL",
+      "webhookUrlHelp": "Configure this URL in your Mercado Pago dashboard (Your business > Webhooks) to receive payment notifications.",
       "save": "Save credentials",
       "saving": "Saving…",
       "saved": "Credentials saved successfully",
@@ -2299,7 +2305,7 @@
     "retry": "Retry"
   },
   "Pulse": {
-    "title": "🔥 Fire Pulse",
+    "title": "📡 Fire Radar",
     "description": "What's happening in your operation right now.",
     "metrics": {
       "atendimento": "Atendimento",
@@ -2332,7 +2338,7 @@
       "ticketMedioSub": "per payment"
     },
     "metricGroups": {
-      "title": "Fire Pulse metrics",
+      "title": "Fire Radar metrics",
       "atendimento": "Support",
       "clientes": "Clients",
       "financeiro": "Finance"
