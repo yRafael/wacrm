@@ -125,10 +125,20 @@ async function findOrCreateContact(
   const existingContact = await findExistingContact(db, accountId, phone);
 
   if (existingContact) {
-    if (name && name !== existingContact.name) {
+    // Only update the contact name when the incoming pushName is a
+    // real display name (non-empty, not just a phone number).  This
+    // prevents blank pushNames from overwriting a previously stored
+    // name and ensures the WhatsApp profile name always wins over
+    // phone-number fallbacks.
+    const trimmedName = name?.trim();
+    if (
+      trimmedName &&
+      trimmedName !== existingContact.name &&
+      !/^\+?\d{7,15}$/.test(trimmedName)
+    ) {
       await db
         .from('contacts')
-        .update({ name, updated_at: new Date().toISOString() })
+        .update({ name: trimmedName, updated_at: new Date().toISOString() })
         .eq('id', existingContact.id);
     }
     return { contact: existingContact, wasCreated: false };
@@ -149,7 +159,14 @@ async function findOrCreateContact(
         updated_at: new Date().toISOString(),
       };
       if (lidContact.phone !== phone) patch.phone = phone;
-      if (name && name !== lidContact.name) patch.name = name;
+      const trimmedName = name?.trim();
+      if (
+        trimmedName &&
+        trimmedName !== lidContact.name &&
+        !/^\+?\d{7,15}$/.test(trimmedName)
+      ) {
+        patch.name = trimmedName;
+      }
       const { error: migrateError } = await db
         .from('contacts')
         .update(patch)
@@ -163,13 +180,14 @@ async function findOrCreateContact(
     }
   }
 
+  const trimmedName = name?.trim();
   const { data: newContact, error: createError } = await db
     .from('contacts')
     .insert({
       account_id: accountId,
       user_id: configOwnerUserId,
       phone,
-      name: name || phone,
+      name: trimmedName && !/^\+?\d{7,15}$/.test(trimmedName) ? trimmedName : phone,
     })
     .select()
     .single();
@@ -406,9 +424,13 @@ export async function processInboundMessage(
     (message.type === 'document' ? message.mediaFilename : null) ??
     (message.type === 'location' ? message.text : null);
 
+  // fromMe messages (echoes from WhatsApp Web/App) are agent-sent.
+  // Don't increment unread_count — the agent already read them.
+  const senderType = message.fromMe ? 'agent' : 'customer';
+
   const { error: msgError } = await db.from('messages').insert({
     conversation_id: conversation.id,
-    sender_type: 'customer',
+    sender_type: senderType,
     content_type: contentType,
     content_text: contentText,
     media_url: message.mediaUrl ?? null,
@@ -428,7 +450,9 @@ export async function processInboundMessage(
     .update({
       last_message_text: contentText || `[${message.type}]`,
       last_message_at: new Date().toISOString(),
-      unread_count: (conversation.unread_count || 0) + 1,
+      unread_count: message.fromMe
+        ? conversation.unread_count || 0
+        : (conversation.unread_count || 0) + 1,
       updated_at: new Date().toISOString(),
     })
     .eq('id', conversation.id);
