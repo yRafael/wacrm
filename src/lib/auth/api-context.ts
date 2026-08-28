@@ -5,7 +5,7 @@
 // This is the machine-to-machine counterpart of `getCurrentAccount`
 // (cookie session → account). Where the dashboard authenticates a
 // human via Supabase cookies, the public API authenticates a caller
-// via `Authorization: Bearer wacrm_live_…`.
+// via `Authorization: Bearer fire_live_…`.
 //
 // Calling convention — every `/api/v1` route does:
 //
@@ -29,12 +29,17 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { supabaseAdmin } from '@/lib/flows/admin-client';
-import { findActiveKeyByHash, touchLastUsed } from '@/lib/api-keys/store';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import {
+  findActiveKeyByHash,
+  getAccountStatus,
+  touchLastUsed,
+} from '@/lib/api-keys/store';
 import { hashApiKey, looksLikeApiKey } from '@/lib/api-keys/keys';
 import { hasScope, type ApiScope } from '@/lib/api-keys/scopes';
 import { forbidden, rateLimited, unauthorized } from '@/lib/api/v1/respond';
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { checkSubscription } from '@/lib/subscription/gating';
 
 export interface ApiKeyContext {
   /** Discriminant — lets shared logic tell key auth from cookie auth. */
@@ -99,6 +104,25 @@ export async function requireApiKey(
   const limit = checkRateLimit(`apikey:${row.id}`, RATE_LIMITS.publicApi);
   if (!limit.success) {
     throw rateLimited(limit);
+  }
+
+  // Status blocking (§5.7) — a SUSPENDED/BANNED account must not work
+  // over the API either, even with a valid, in-scope key. The status
+  // is read server-side with the service-role client, so a caller
+  // can't bypass it by rotating keys.
+  const status = await getAccountStatus(row.account_id);
+  if (status !== 'ACTIVE') {
+    throw forbidden('This account is suspended or banned');
+  }
+
+  // Subscription gating (§4) — blocked subscription statuses
+  // (SUSPENDED, CANCELED, EXPIRED) prevent workspace access via the
+  // public API, matching the dashboard enforcement in getCurrentAccount().
+  const subscription = await checkSubscription(supabaseAdmin(), row.account_id);
+  if (!subscription.hasAccess) {
+    throw forbidden(
+      subscription.blockReason ?? 'Subscription required'
+    );
   }
 
   if (scope && !hasScope(row.scopes, scope)) {

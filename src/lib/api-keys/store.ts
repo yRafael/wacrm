@@ -11,7 +11,7 @@
 // and read-only here makes it easy to audit.
 // ============================================================
 
-import { supabaseAdmin } from '@/lib/flows/admin-client';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 
 /** Shape of an `api_keys` row as the auth path consumes it. */
 export interface ApiKeyRow {
@@ -71,6 +71,24 @@ export async function getAccountName(
     .maybeSingle();
   if (error || !data) return null;
   return (data.name as string) ?? null;
+}
+
+/**
+ * Fetch the account's current status (ACTIVE / SUSPENDED / BANNED,
+ * migration 046). Service-role; used by `requireApiKey` for the
+ * public-API status block (§5.7). Returns null when the account row
+ * is missing or the lookup fails.
+ */
+export async function getAccountStatus(
+  accountId: string
+): Promise<string | null> {
+  const { data, error } = await supabaseAdmin()
+    .from('accounts')
+    .select('status')
+    .eq('id', accountId)
+    .maybeSingle();
+  if (error || !data) return null;
+  return (data.status as string) ?? null;
 }
 
 /**
