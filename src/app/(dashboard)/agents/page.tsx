@@ -39,12 +39,12 @@ export default function AgentsPage() {
   return (
     <div>
       <div className="flex items-center gap-2">
-        <Bot className="h-6 w-6 text-primary" />
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <Bot className="text-primary h-6 w-6" />
+        <h1 className="text-foreground text-2xl font-bold tracking-tight">
           Agentes de IA
         </h1>
       </div>
-      <p className="mt-1 text-sm text-muted-foreground">
+      <p className="text-muted-foreground mt-1 text-sm">
         Seu agente de IA com sua própria chave — configure-o e teste-o no
         playground antes de ele responder aos clientes na caixa de entrada.
       </p>
