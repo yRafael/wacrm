@@ -481,3 +481,72 @@ html[data-theme='fire'] {
     0 0 10px 2px color-mix(in oklch, var(--flame-1) 60%, transparent),
     0 0 20px 6px color-mix(in oklch, var(--flame-2) 35%, transparent);
 }
+
+/* Fire Radar — waveform bar animation */
+@keyframes pulse-bar {
+  0%, 100% { opacity: 0.7; transform: scaleY(0.9); }
+  50% { opacity: 1; transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse *, * { animation: none !important; }
+}
+
+/* ============================================================
+ * Brand gradient utilities — Fire Play identity
+ *
+ * Extracted from the official logo palette:
+ *   Deep red  → Orange → Gold
+ * Use sparingly: logo button, primary CTA, hero accents.
+ * ============================================================ */
+.fire-gradient-bg {
+  background: linear-gradient(135deg, #FF4500 0%, #FF6B29 40%, #F5A623 100%);
+}
+.fire-gradient-text {
+  background: linear-gradient(135deg, #FF6B29 0%, #F5A623 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.fire-gradient-btn {
+  background: linear-gradient(135deg, #FF6B29 0%, #F5A623 100%);
+  transition: all 0.2s ease;
+}
+.fire-gradient-btn:hover {
+  background: linear-gradient(135deg, #FF5722 0%, #FFB300 100%);
+  box-shadow: 0 0 20px rgba(255, 107, 41, 0.3), 0 0 40px rgba(245, 166, 35, 0.15);
+}
+
+/* ============================================================
+ * Auth panel spark particles
+ * Tiny ascending embers that float up slowly behind the logo.
+ * ============================================================ */
+.spark-particle {
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  height: 2px;
+  border-radius: 9999px;
+  background: #F5A623;
+  opacity: 0;
+  animation: spark-rise linear infinite;
+  pointer-events: none;
+}
+@keyframes spark-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+  10% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-350px) translateX(15px) scale(0.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spark-particle { animation: none !important; }
+}

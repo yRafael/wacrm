@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AuthLayout from '@/components/auth/auth-layout';
-import { UsersRound } from 'lucide-react';
+import { UsersRound, Loader2, Mail, Lock } from 'lucide-react';
 
 // `useSearchParams` opts the component out of static prerendering
 // unless it sits under a Suspense boundary. We split the form into
@@ -26,9 +26,6 @@ export default function LoginPage() {
 
 function LoginPageInner() {
   const searchParams = useSearchParams();
-  // Forwarded from `/join/<token>` when the visitor already has an
-  // account. After a successful sign-in we send them to the join
-  // page to accept rather than to /dashboard.
   const inviteToken = searchParams.get('invite');
   const t = useTranslations('LoginPage');
 
@@ -43,9 +40,6 @@ function LoginPageInner() {
     setError(null);
     setLoading(true);
 
-    // Server-side login with per-IP rate limiting (brute-force protection).
-    // The API route calls supabase.auth.signInWithPassword() and returns
-    // a generic error message to avoid leaking whether the email exists.
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -60,14 +54,6 @@ function LoginPageInner() {
       return;
     }
 
-    // Full-page navigation (not router.push) so the browser issues a
-    // fresh top-level request that carries the just-written Supabase
-    // auth cookies to the middleware gating /dashboard. A soft
-    // client-side navigation can reach the protected route before the
-    // server observes the new session, so the middleware bounces it
-    // back to /login — which looks like the page "just refreshing"
-    // instead of signing in (issue #365). Mirrors the deliberate full
-    // reload the invite-accept flow already uses in join/[token].
     const destination = inviteToken
       ? `/join/${encodeURIComponent(inviteToken)}`
       : '/dashboard';
@@ -80,65 +66,80 @@ function LoginPageInner() {
       description={inviteToken ? t('descAccept') : t('descWelcome')}
     >
       {inviteToken && (
-        <div className="bg-primary/10 mb-2 flex h-12 w-12 items-center justify-center rounded-xl">
-          <UsersRound className="text-primary h-6 w-6" />
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-primary/10 bg-primary/5 px-4 py-3">
+          <div className="bg-primary/10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
+            <UsersRound className="text-primary h-4 w-4" />
+          </div>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            Você foi convidado para uma equipe. Faça login para aceitar o convite.
+          </p>
         </div>
       )}
-      <form onSubmit={handleLogin} className="flex flex-col gap-5">
+
+      <form onSubmit={handleLogin} className="flex flex-col gap-4">
         {error && (
-          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div className="rounded-xl border border-red-500/15 bg-red-500/5 px-4 py-3 text-sm text-red-400">
             {error}
           </div>
         )}
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="email" className="text-muted-foreground text-sm font-medium">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="email" className="text-muted-foreground text-xs font-medium">
             {t('emailLabel')}
           </Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder={t('emailPlaceholder')}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="border-border/60 bg-white/[0.03] text-foreground placeholder:text-muted-foreground/50 focus-visible:border-primary/60 focus-visible:ring-primary/15 h-11 transition-colors"
-          />
+          <div className="relative">
+            <Mail className="text-muted-foreground/40 pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2" />
+            <Input
+              id="email"
+              type="email"
+              placeholder={t('emailPlaceholder')}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="h-11 border-white/[0.06] bg-white/[0.025] pl-10 text-sm text-foreground placeholder:text-muted-foreground/40 focus-visible:border-primary/40 focus-visible:ring-primary/10 transition-colors"
+            />
+          </div>
         </div>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password" className="text-muted-foreground text-sm font-medium">
+            <Label htmlFor="password" className="text-muted-foreground text-xs font-medium">
               {t('passwordLabel')}
             </Label>
             <Link
               href="/forgot-password"
-              className="text-primary/80 hover:text-primary text-xs font-medium transition-colors"
+              className="text-primary/70 hover:text-primary text-xs font-medium transition-colors"
             >
               {t('forgotPassword')}
             </Link>
           </div>
-          <Input
-            id="password"
-            type="password"
-            placeholder={t('passwordPlaceholder')}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="border-border/60 bg-white/[0.03] text-foreground placeholder:text-muted-foreground/50 focus-visible:border-primary/60 focus-visible:ring-primary/15 h-11 transition-colors"
-          />
+          <div className="relative">
+            <Lock className="text-muted-foreground/40 pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2" />
+            <Input
+              id="password"
+              type="password"
+              placeholder={t('passwordPlaceholder')}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="h-11 border-white/[0.06] bg-white/[0.025] pl-10 text-sm text-foreground placeholder:text-muted-foreground/40 focus-visible:border-primary/40 focus-visible:ring-primary/10 transition-colors"
+            />
+          </div>
         </div>
 
         <Button
           type="submit"
           disabled={loading}
-          className="fire-gradient-btn text-white font-semibold mt-1 h-11 w-full rounded-lg text-sm tracking-wide shadow-[0_4px_20px_rgba(255,107,26,0.25)] transition-all hover:shadow-[0_4px_28px_rgba(255,107,26,0.35)] disabled:opacity-50"
+          className="fire-gradient-btn text-white font-semibold mt-2 h-11 w-full rounded-xl text-sm tracking-wide shadow-[0_4px_24px_rgba(255,107,26,0.2)] transition-all hover:shadow-[0_4px_32px_rgba(255,107,26,0.3)] disabled:opacity-50"
         >
+          {loading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : null}
           {loading ? t('signingIn') : t('signIn')}
         </Button>
       </form>
 
-      <p className="text-muted-foreground/70 mt-8 text-center text-sm">
+      <p className="text-muted-foreground/50 mt-6 text-center text-sm">
         {t('noAccount')}{' '}
         <Link
           href={

@@ -99,7 +99,7 @@ export default function JoinPage() {
   // route group, so it doesn't reach this page. We hit Supabase
   // directly the same way `/login` and `/signup` do.
   const [authedUserId, setAuthedUserId] = useState<string | null | undefined>(
-    undefined, // undefined = unknown / still loading; null = signed out
+    undefined // undefined = unknown / still loading; null = signed out
   );
   const [accepting, setAccepting] = useState(false);
   // `redeem_invitation` returns 409 when the caller's current account
@@ -169,7 +169,7 @@ export default function JoinPage() {
     try {
       const res = await fetch(
         `/api/invitations/${encodeURIComponent(token)}/redeem`,
-        { method: 'POST' },
+        { method: 'POST' }
       );
       if (!res.ok) {
         const payload = (await res.json().catch(() => ({}))) as {
@@ -183,7 +183,7 @@ export default function JoinPage() {
         if (res.status === 409) {
           setConflictMessage(
             payload.error ||
-              'Você já está em outra conta. Entre com um e-mail diferente para entrar nesta.',
+              'Você já está em outra conta. Entre com um e-mail diferente para entrar nesta.'
           );
         } else {
           toast.error(payload.error || 'Falha ao aceitar o convite');
@@ -220,10 +220,10 @@ export default function JoinPage() {
   // ----- Loading state (peek pending OR auth not yet resolved) -----
   if (peek === null || authedUserId === undefined) {
     return (
-      <Card className="w-full max-w-md border-border bg-card">
+      <Card className="border-border bg-card w-full max-w-md">
         <CardContent className="flex flex-col items-center gap-3 py-12">
-          <Loader2 className="size-6 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">Verificando convite…</p>
+          <Loader2 className="text-primary size-6 animate-spin" />
+          <p className="text-muted-foreground text-sm">Verificando convite…</p>
         </CardContent>
       </Card>
     );
@@ -233,12 +233,14 @@ export default function JoinPage() {
   if (!peek.ok) {
     const copy = FAIL_COPY[peek.reason];
     return (
-      <Card className="w-full max-w-md border-border bg-card">
+      <Card className="border-border bg-card w-full max-w-md">
         <CardHeader className="items-center text-center">
           <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-red-500/10">
             <MailX className="h-6 w-6 text-red-400" />
           </div>
-          <CardTitle className="text-xl text-foreground">{copy.title}</CardTitle>
+          <CardTitle className="text-foreground text-xl">
+            {copy.title}
+          </CardTitle>
           <CardDescription className="text-muted-foreground">
             {copy.body}
           </CardDescription>
@@ -255,14 +257,14 @@ export default function JoinPage() {
             <>
               <Button
                 onClick={loadPeekAndAuth}
-                className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 w-full"
               >
                 Tentar novamente
               </Button>
               <Link href="/signup">
                 <Button
                   variant="outline"
-                  className="w-full border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="border-border text-muted-foreground hover:bg-muted hover:text-foreground w-full"
                 >
                   Criar uma nova conta
                 </Button>
@@ -271,14 +273,14 @@ export default function JoinPage() {
           ) : (
             <>
               <Link href="/signup">
-                <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+                <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full">
                   Criar uma nova conta
                 </Button>
               </Link>
               <Link href="/login">
                 <Button
                   variant="outline"
-                  className="w-full border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                  className="border-border text-muted-foreground hover:bg-muted hover:text-foreground w-full"
                 >
                   Entrar
                 </Button>
@@ -293,17 +295,17 @@ export default function JoinPage() {
   // ----- Peek OK -----
   const inviteHeader = (
     <CardHeader className="items-center text-center">
-      <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-        <UsersRound className="h-6 w-6 text-primary" />
+      <div className="bg-primary/10 mb-2 flex h-12 w-12 items-center justify-center rounded-xl">
+        <UsersRound className="text-primary h-6 w-6" />
       </div>
-      <CardTitle className="text-xl text-foreground">
+      <CardTitle className="text-foreground text-xl">
         Você foi convidado para{' '}
         <span className="text-primary">{peek.account_name}</span>
       </CardTitle>
       <CardDescription className="text-muted-foreground">
         Você entrará como{' '}
-        <span className="inline-flex items-center gap-1 text-foreground">
-          <ShieldCheck className="size-3.5 text-primary" />
+        <span className="text-foreground inline-flex items-center gap-1">
+          <ShieldCheck className="text-primary size-3.5" />
           {ROLE_LABEL[peek.role]}
         </span>
         . Link válido até{' '}
@@ -321,13 +323,13 @@ export default function JoinPage() {
   if (authedUserId) {
     return (
       <>
-        <Card className="w-full max-w-md border-border bg-card">
+        <Card className="border-border bg-card w-full max-w-md">
           {inviteHeader}
           <CardContent className="flex flex-col gap-3">
             <Button
               onClick={handleAccept}
               disabled={accepting}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 w-full"
             >
               {accepting ? (
                 <>
@@ -341,10 +343,10 @@ export default function JoinPage() {
                 </>
               )}
             </Button>
-            <p className="text-center text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-center text-xs">
               Ao aceitar, seu login será movido para{' '}
-              <span className="text-muted-foreground">{peek.account_name}</span>. Sua
-              conta pessoal vazia criada no cadastro será removida.
+              <span className="text-muted-foreground">{peek.account_name}</span>
+              . Sua conta pessoal vazia criada no cadastro será removida.
             </p>
           </CardContent>
         </Card>
@@ -361,7 +363,7 @@ export default function JoinPage() {
         >
           <DialogContent className="bg-popover border-border sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-popover-foreground">
+              <DialogTitle className="text-popover-foreground flex items-center gap-2">
                 <AlertTriangle className="size-4 text-amber-400" />
                 Não é possível entrar em {peek.account_name} com esta conta
               </DialogTitle>
@@ -369,12 +371,14 @@ export default function JoinPage() {
                 {conflictMessage}
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-2 py-2 text-xs text-muted-foreground">
+            <div className="text-muted-foreground space-y-2 py-2 text-xs">
               <p>
                 Para entrar em{' '}
-                <span className="text-popover-foreground">{peek.account_name}</span>,
-                saia e cadastre-se novamente com um endereço de e-mail diferente.
-                O link do convite continua válido enquanto não
+                <span className="text-popover-foreground">
+                  {peek.account_name}
+                </span>
+                , saia e cadastre-se novamente com um endereço de e-mail
+                diferente. O link do convite continua válido enquanto não
                 expirar.
               </p>
             </div>
@@ -409,18 +413,18 @@ export default function JoinPage() {
 
   // ----- Not authed: prompt to sign up or sign in -----
   return (
-    <Card className="w-full max-w-md border-border bg-card">
+    <Card className="border-border bg-card w-full max-w-md">
       {inviteHeader}
       <CardContent className="flex flex-col gap-2">
         <Link href={`/signup?invite=${encodeURIComponent(token!)}`}>
-          <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
+          <Button className="bg-primary text-primary-foreground hover:bg-primary/90 w-full">
             Criar conta &amp; entrar
           </Button>
         </Link>
         <Link href={`/login?invite=${encodeURIComponent(token!)}`}>
           <Button
             variant="outline"
-            className="w-full border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="border-border text-muted-foreground hover:bg-muted hover:text-foreground w-full"
           >
             Já tenho uma conta
           </Button>
