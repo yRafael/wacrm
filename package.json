@@ -1,17 +1,17 @@
 {
-  "name": "wacrm",
+  "name": "fire-workspace",
   "version": "0.8.0",
   "private": true,
-  "description": "Self-hostable CRM template for WhatsApp built on Next.js and Supabase — shared inbox, contacts, sales pipelines, broadcasts, and no-code automations.",
+  "description": "Fire Workspace — CRM para WhatsApp da Fire Play, multiempresa, seguro e pronto para expansão.",
   "license": "MIT",
-  "author": "Arnas Donauskas",
-  "homepage": "https://github.com/ArnasDon/wacrm",
+  "author": "Rafael — Fire Play",
+  "homepage": "https://github.com/yRafael/fire-workspace",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ArnasDon/wacrm.git"
+    "url": "git+https://github.com/yRafael/fire-workspace.git"
   },
   "bugs": {
-    "url": "https://github.com/ArnasDon/wacrm/issues"
+    "url": "https://github.com/yRafael/fire-workspace/issues"
   },
   "keywords": [
     "crm",
@@ -21,8 +21,8 @@
     "supabase",
     "automation",
     "broadcast",
-    "self-hosted",
-    "template"
+    "fire-workspace",
+    "fire-play"
   ],
   "engines": {
     "node": ">=20.0.0"
@@ -53,6 +53,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "lucide-react": "^1.22.0",
+    "mercadopago": "^3.4.0",
     "next": "16.2.6",
     "next-intl": "^4.13.2",
     "opus-recorder": "^8.0.5",

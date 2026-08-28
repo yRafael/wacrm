@@ -1,9 +1,9 @@
 # Changelog
 
-User-visible changes in `wacrm`. Self-hosters: when pulling an update,
-check this file for any **migration required** notes and apply the
-matching SQL files from `supabase/migrations/` against your Supabase
-project before restarting the app.
+User-visible changes in **Fire Workspace**. Self-hosters: when pulling
+an update, check this file for any **migration required** notes and
+apply the matching SQL files from `supabase/migrations/` against your
+Supabase project before restarting the app.
 
 Versions follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Pre-1.0, `MINOR` bumps cover new modules; `PATCH` bumps cover bug fixes
@@ -81,7 +81,7 @@ sidebar — it's no longer tucked inside Settings.
 - **AI Agents (sidebar).** A dedicated `/agents` area with two tabs:
   - **Playground** — a test chat to message your agent and see its
     grounded, multi-turn replies (and where it would hand off to a human)
-    *before* it ever answers a real customer. Runs the exact same path as
+    _before_ it ever answers a real customer. Runs the exact same path as
     the auto-reply bot (knowledge-base retrieval + your provider), and
     works even before you flip the master switch on, so you can try, then
     enable. Backed by `POST /api/ai/playground`.
@@ -122,9 +122,9 @@ relevant excerpts are retrieved into every draft and auto-reply.
 
 Adds the **AI reply assistant** — bring-your-own-key. Each account
 pastes its own OpenAI or Anthropic key under **Settings → AI
-Assistant**; wacrm calls the provider directly with that key, so
+Assistant**; Fire Workspace calls the provider directly with that key, so
 there's no per-seat AI fee and your conversation data never leaves
-your own infrastructure for a wacrm-run service. The key is stored
+your own infrastructure for a Fire-Workspace-run service. The key is stored
 AES-256-GCM-encrypted at rest (same as WhatsApp tokens) and never
 returned to the client after saving.
 
@@ -157,7 +157,7 @@ returned to the client after saving.
 ## [0.4.0] — 2026-07-01
 
 Completes the public API (#245): **outbound event webhooks** so
-automations can *react* to activity instead of polling.
+automations can _react_ to activity instead of polling.
 
 ### Added
 
@@ -166,7 +166,7 @@ automations can *react* to activity instead of polling.
   happens in your account — `message.received`, `message.status_updated`,
   or `conversation.created`. Manage endpoints with
   `GET/POST /api/v1/webhooks` and `GET/PATCH/DELETE /api/v1/webhooks/{id}`.
-  Each delivery is signed with an `X-Wacrm-Signature`
+  Each delivery is signed with an `X-Fire-Signature`
   (HMAC-SHA256 over `timestamp.body`) so receivers can verify
   authenticity and reject replays; the signing secret is returned once
   at creation and stored encrypted. Delivery is best-effort — an
@@ -174,11 +174,11 @@ automations can *react* to activity instead of polling.
   consecutive failures. See `docs/public-api.md`.
   **Migration required:** apply
   `supabase/migrations/028_webhook_endpoints.sql`.
-  ([#245](https://github.com/ArnasDon/wacrm/issues/245))
+  (#245)
 
 ## [0.3.0] — 2026-07-01
 
-Multi-user accounts ship. Every wacrm install is multi-tenant on the
+Multi-user accounts ship. Every Fire Workspace install is multi-tenant on the
 database side: a single user's signup creates a fresh "account", and
 every row is scoped to that account rather than to the user directly.
 This release also opens the user-visible **Members** surface — invite
@@ -193,7 +193,7 @@ always did.
 ### Added
 
 - **Public REST API (`/api/v1`) — groundwork.** A scoped, revocable
-  **API key** system so you can drive wacrm from your own scripts and
+  **API key** system so you can drive Fire Workspace from your own scripts and
   automations. Create keys under **Settings → API keys** (admin+),
   grant only the scopes each integration needs, and authenticate with
   `Authorization: Bearer <key>`. Keys are account-scoped and stored
@@ -201,7 +201,7 @@ always did.
   scopes, per-key rate limiting, the management UI, and a
   `GET /api/v1/me` probe to verify a key. See
   `docs/public-api.md`. **Migration required:** apply
-  `supabase/migrations/026_api_keys.sql`. ([#245](https://github.com/ArnasDon/wacrm/issues/245))
+  `supabase/migrations/026_api_keys.sql`. (#245)
 - **Public REST API — data endpoints.** Built on the key auth above,
   so external automations can read and drive the CRM:
   - `POST /api/v1/messages` — send a text / template / media message to
@@ -218,11 +218,11 @@ always did.
   - `POST /api/v1/broadcasts` + `GET /api/v1/broadcasts/{id}` — launch a
     template broadcast to a recipient list and poll its progress
     (`broadcasts:send`).
-  All list endpoints share one cursor-pagination contract
-  (`{ data, meta: { next_cursor } }`). No migration required — the
-  scopes already existed and the tables are unchanged. Outbound event
-  webhooks (react to inbound messages) are the remaining roadmap item.
-  See `docs/public-api.md`. ([#245](https://github.com/ArnasDon/wacrm/issues/245))
+    All list endpoints share one cursor-pagination contract
+    (`{ data, meta: { next_cursor } }`). No migration required — the
+    scopes already existed and the tables are unchanged. Outbound event
+    webhooks (react to inbound messages) are the remaining roadmap item.
+    See `docs/public-api.md`. (#245)
 
 ### Changed
 
@@ -261,8 +261,8 @@ always did.
 
 - `supabase/migrations/020_account_sharing_followups.sql` —
   composite partial indexes on `automations(account_id,
-  trigger_type) WHERE is_active` and `flows(account_id) WHERE
-  status='active'` for the engine dispatch hot path; updated
+trigger_type) WHERE is_active` and `flows(account_id) WHERE
+status='active'` for the engine dispatch hot path; updated
   `flow-media` storage RLS to allow account-member writes under
   the new path convention. Idempotent.
 
@@ -321,7 +321,7 @@ always did.
   Existing deals keep the currency they were saved with — totals are
   shown in the account default with no exchange-rate conversion (one
   currency per account). Full guide:
-  [Default currency](https://wacrm.tech/docs/settings#deals).
+  Default currency.
 - **Members tab in Settings.** The user-facing surface for the
   multi-user APIs below, available to everyone (no beta flag). From
   Settings → **Members** an admin or owner can: see who's on the
@@ -330,7 +330,7 @@ always did.
   expiry), revoke pending invites, change a member's role, remove a
   member, and — as owner — transfer ownership. Recipients accept via
   a public `/join/[token]` page. Full guide:
-  [Members docs](https://wacrm.tech/docs/members).
+  Members docs.
 - **Account & member management API** — server-side endpoints
   backing the Members tab. All routes are role-gated and
   return Supabase-RLS-scoped data.
@@ -423,7 +423,7 @@ video mid-conversation.
   supports `{{vars.X}}` interpolation); documents also take an optional
   filename shown in the recipient's chat. Auto-advances after send —
   same suspend semantics as `send_message`.
-  ([#156](https://github.com/ArnasDon/wacrm/pull/156))
+  (#156)
 
 ### Migration required
 
@@ -453,17 +453,17 @@ when two users on the same instance saved the same WhatsApp
 - **Inbound WhatsApp messages no longer silently disappear** when two
   users have claimed the same `phone_number_id`. Previously the
   webhook used `.single()` to look up the owning config, which errors
-  `PGRST116` for both 0 rows *and* ≥2 rows — the second user's save
+  `PGRST116` for both 0 rows _and_ ≥2 rows — the second user's save
   put the DB into the ≥2-row state and every inbound message was
-  dropped while the log misleadingly reported *"No config found for
-  phone_number_id"*. Three layers of fix: `POST /api/whatsapp/config`
+  dropped while the log misleadingly reported _"No config found for
+  phone_number_id"_. Three layers of fix: `POST /api/whatsapp/config`
   now returns **409** when another user has already claimed the
   number, the webhook lookup distinguishes 0 rows from ≥2 rows and
   logs the conflicting `user_id`s, and a new DB constraint
   (`UNIQUE(phone_number_id)`) prevents the bad state at the storage
   layer. Reported in
-  [#136](https://github.com/ArnasDon/wacrm/issues/136), fixed in
-  [#143](https://github.com/ArnasDon/wacrm/pull/143).
+  #136, fixed in
+  #143.
 
 ### Migration required
 
@@ -487,7 +487,7 @@ Apply against your Supabase project before deploying this version:
 
 ### Note on multi-user setups
 
-wacrm is intentionally **single-tenant per WhatsApp number**. RLS on
+Fire Workspace is intentionally **single-tenant per WhatsApp number**. RLS on
 `conversations`/`messages` is `auth.uid() = user_id`, so a second
 user physically cannot read messages routed to a different owner —
 two users sharing one number was never supported. If you need
@@ -509,19 +509,19 @@ conversation engine that runs alongside Automations. Also ships a
   one active run per contact. Widened `messages.content_type` CHECK
   to accept `'interactive'`; added `interactive_reply_id` column so
   the inbox can render button/list taps.
-  ([#112](https://github.com/ArnasDon/wacrm/pull/112))
+  (#112)
 - **Runner engine.** `dispatchInboundToFlows` parses every inbound
   webhook, decides whether the message is a reply on an active run
   or a fresh trigger, advances the state machine, and reports back
   to the webhook so consumed messages don't also fire automations.
   Idempotent on Meta's `message_id`.
-  ([#114](https://github.com/ArnasDon/wacrm/pull/114))
+  (#114)
 - **No-code builder UI** at `/flows`. Linear-list editor with
   per-node config forms, live validator, draft/active/archived
   status, and a 5-route REST API (`GET/POST /api/flows`,
   `GET/PUT/DELETE /api/flows/[id]`, `POST /api/flows/[id]/activate`,
   `GET /api/flows/[id]/runs`, `GET /api/flows/templates`).
-  ([#115](https://github.com/ArnasDon/wacrm/pull/115))
+  (#115)
 - **Templates + v1.5 node types.** Three starter templates
   (Welcome menu, FAQ bot, Lead capture) cloneable from the New-flow
   dialog. Three new node types: `collect_input` (capture customer
@@ -529,12 +529,12 @@ conversation engine that runs alongside Automations. Also ships a
   field), `set_tag` (add or remove a tag). `{{vars.X}}` interpolation
   in send_message + collect_input prompts. Per-flow run-history
   viewer at `/flows/[id]/runs`.
-  ([#117](https://github.com/ArnasDon/wacrm/pull/117))
+  (#117)
 - **Stale-run sweep cron** at `GET /api/flows/cron` — marks runs
   past their configured timeout (default 24h) as `timed_out` so
   abandoned conversations free up the contact for new triggers.
   Reuses `AUTOMATION_CRON_SECRET`.
-  ([#114](https://github.com/ArnasDon/wacrm/pull/114))
+  (#114)
 
 #### Color themes
 
@@ -544,12 +544,12 @@ conversation engine that runs alongside Automations. Also ships a
   `dataset.theme`, persisted to `localStorage`. Inline boot script in
   `layout.tsx` replays the choice before first paint so there's no
   flash of the default.
-  ([#132](https://github.com/ArnasDon/wacrm/pull/132))
+  (#132)
 - **Theme tokenization sweep** — every previously hard-coded
   `violet-*` Tailwind class replaced with `primary` tokens across
   ~49 files. Picking a non-violet theme now themes the whole app,
   not just the chrome.
-  ([#133](https://github.com/ArnasDon/wacrm/pull/133))
+  (#133)
 
 ### Changed
 
@@ -558,44 +558,44 @@ conversation engine that runs alongside Automations. Also ships a
 - **Flows is now available to every authenticated user.** The
   per-account beta gate is gone; the sidebar entry + page header
   carry a small "Beta" chip as the only remaining signal.
-  ([#134](https://github.com/ArnasDon/wacrm/pull/134))
+  (#134)
 - **Editor UX**:
   - Internal `node_key` + per-button/row `reply_id` identifiers
     hidden behind a per-node "Show advanced" disclosure.
-    ([#118](https://github.com/ArnasDon/wacrm/pull/118))
+    (#118)
   - `send_list` nodes can have multiple sections.
-    ([#119](https://github.com/ArnasDon/wacrm/pull/119))
+    (#119)
   - Collapsed node cards show a 1-line content preview per node
     type (text excerpt, button titles, condition summary, etc.).
-    ([#120](https://github.com/ArnasDon/wacrm/pull/120))
+    (#120)
   - Validation issues are clickable: jump to + flash the offending
     node.
-    ([#121](https://github.com/ArnasDon/wacrm/pull/121))
+    (#121)
   - Unsaved-changes "● Edited" indicator + `beforeunload` reload
     guard.
-    ([#122](https://github.com/ArnasDon/wacrm/pull/122))
+    (#122)
   - New-flow dialog actually widens to fit the 3 template cards
     (was capped at 384px by a baked-in `sm:max-w-sm` from shadcn).
-    ([#129](https://github.com/ArnasDon/wacrm/pull/129),
-    [#131](https://github.com/ArnasDon/wacrm/pull/131))
+    (#129,
+    #131)
   - Validation panel pinned to the viewport bottom so
     activate-readiness follows the user as they scroll through nodes.
-    ([#130](https://github.com/ArnasDon/wacrm/pull/130))
+    (#130)
 
 #### Engine reliability
 
 - **Atomic `execution_count` increment** via SECURITY DEFINER RPC —
   prevents lost counts when two webhooks start runs concurrently.
   Mirrors the automations engine pattern.
-  ([#124](https://github.com/ArnasDon/wacrm/pull/124))
+  (#124)
 - **Preload all flow_nodes once per dispatch** — one SELECT per
   inbound instead of one per advance-loop iteration. A 5-node
   auto-advance chain now costs 1 round trip, not 5.
-  ([#125](https://github.com/ArnasDon/wacrm/pull/125))
+  (#125)
 - **Wasted re-read dropped** after reprompt reset; `loadActiveRun`
   switched to defensive `.limit(1)` so a migration glitch producing
   duplicates can't crash dispatch.
-  ([#126](https://github.com/ArnasDon/wacrm/pull/126))
+  (#126)
 
 ### Security
 
@@ -603,11 +603,11 @@ conversation engine that runs alongside Automations. Also ships a
   text is no longer persisted to `flow_run_events.payload`; only
   the length is. A `collect_input` prompt asking "what's your card
   number?" used to leave the PAN sitting in the events table.
-  ([#123](https://github.com/ArnasDon/wacrm/pull/123))
+  (#123)
 - **Constant-time cron-secret compare** on `/api/flows/cron`
   (`crypto.timingSafeEqual`) to close a theoretical
   timing-side-channel on the `x-cron-secret` header check.
-  ([#127](https://github.com/ArnasDon/wacrm/pull/127))
+  (#127)
 
 ### Fixed
 
@@ -615,7 +615,7 @@ conversation engine that runs alongside Automations. Also ships a
   navigating in. Root cause: `useAuth` flipped `loading: false`
   before the profile fetch resolved. `use-auth` now exposes a
   separate `profileLoading` boolean.
-  ([#128](https://github.com/ArnasDon/wacrm/pull/128))
+  (#128)
 
 ### Migration required
 
@@ -638,7 +638,7 @@ whether you applied a previous one.
 - **`src/lib/flows/feature-flag.ts`** + its tests. Flows is open to
   all users; the `profiles.beta_features` column itself survives
   for future beta gates.
-  ([#134](https://github.com/ArnasDon/wacrm/pull/134))
+  (#134)
 
 ---
 

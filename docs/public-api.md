@@ -1,6 +1,6 @@
 # Public API (`/api/v1`)
 
-The public API lets you drive your wacrm instance from your own
+The public API lets you drive your Fire Workspace instance from your own
 scripts and automations — send messages, manage contacts, launch
 broadcasts — without going through the dashboard UI.
 
@@ -14,7 +14,7 @@ Every request authenticates with an **API key**, sent as a bearer
 token:
 
 ```
-Authorization: Bearer wacrm_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+Authorization: Bearer fire_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 ```
 
 Keys are **account-scoped**: a key acts on exactly one account, the
@@ -27,9 +27,9 @@ In the dashboard: **Settings → API keys → New API key**. Only
 
 1. Give the key a name (after the integration that will use it).
 2. Grant the **scopes** it needs — nothing more (see below).
-3. Copy the key. **The full key is shown exactly once.** wacrm
-   stores only a SHA-256 hash, so it can never be shown again. If you
-   lose it, revoke it and create a new one.
+3. Copy the key. **The full key is shown exactly once.** Fire
+   Workspace stores only a SHA-256 hash, so it can never be shown
+   again. If you lose it, revoke it and create a new one.
 
 ### Revoking a key
 
@@ -41,15 +41,15 @@ key's next request. Revoked keys stay in the list as an audit trail.
 A key can do only what its scopes allow — independent of who created
 it. Grant the minimum.
 
-| Scope                | Allows                                   |
-| -------------------- | ---------------------------------------- |
-| `messages:send`      | Send WhatsApp messages                   |
-| `messages:read`      | Read messages and delivery status        |
-| `contacts:read`      | List and read contacts                   |
-| `contacts:write`     | Create and update contacts               |
-| `conversations:read` | List and read conversations              |
-| `broadcasts:send`    | Launch broadcast campaigns               |
-| `webhooks:manage`    | Register and manage outbound webhooks    |
+| Scope                | Allows                                |
+| -------------------- | ------------------------------------- |
+| `messages:send`      | Send WhatsApp messages                |
+| `messages:read`      | Read messages and delivery status     |
+| `contacts:read`      | List and read contacts                |
+| `contacts:write`     | Create and update contacts            |
+| `conversations:read` | List and read conversations           |
+| `broadcasts:send`    | Launch broadcast campaigns            |
+| `webhooks:manage`    | Register and manage outbound webhooks |
 
 A key with **no scopes** still authenticates and can call
 `GET /api/v1/me` — useful for verifying a key works.
@@ -69,14 +69,14 @@ Every response uses one of two shapes:
 Branch on `error.code` (stable); `error.message` is for humans and
 may be reworded.
 
-| Status | `code`         | Meaning                                          |
-| ------ | -------------- | ------------------------------------------------ |
+| Status | `code`         | Meaning                                               |
+| ------ | -------------- | ----------------------------------------------------- |
 | 401    | `unauthorized` | Missing / malformed / unknown / revoked / expired key |
-| 403    | `forbidden`    | Valid key, but missing the required scope        |
-| 429    | `rate_limited` | Per-key rate limit exceeded                      |
-| 400    | `bad_request`  | Malformed input                                  |
-| 404    | `not_found`    | No such resource                                 |
-| 500    | `internal`     | Server error                                     |
+| 403    | `forbidden`    | Valid key, but missing the required scope             |
+| 429    | `rate_limited` | Per-key rate limit exceeded                           |
+| 400    | `bad_request`  | Malformed input                                       |
+| 404    | `not_found`    | No such resource                                      |
+| 500    | `internal`     | Server error                                          |
 
 ## Rate limits
 
@@ -103,7 +103,7 @@ and to discover its scopes.
 
 ```bash
 curl https://your-crm.example.com/api/v1/me \
-  -H "Authorization: Bearer wacrm_live_xxx"
+  -H "Authorization: Bearer fire_live_xxx"
 ```
 
 ```json
@@ -123,7 +123,7 @@ finds-or-creates the contact + conversation, then sends.
 
 ```bash
 curl -X POST https://your-crm.example.com/api/v1/messages \
-  -H "Authorization: Bearer wacrm_live_xxx" \
+  -H "Authorization: Bearer fire_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{ "to": "+14155550123", "type": "text", "text": "Hi 👋" }'
 ```
@@ -140,9 +140,9 @@ curl -X POST https://your-crm.example.com/api/v1/messages \
   "template": {
     "name": "order_update",
     "language": "en_US",
-    "params": ["A123"]        // positional body vars, or a structured object
+    "params": ["A123"], // positional body vars, or a structured object
   },
-  "reply_to_message_id": "<uuid>"   // optional; must be in the same conversation
+  "reply_to_message_id": "<uuid>", // optional; must be in the same conversation
 }
 ```
 
@@ -174,10 +174,15 @@ or phone) and `?tag=<tagId>`.
 {
   "data": [
     {
-      "id": "…", "phone": "+14155550123", "name": "Jane Doe",
-      "email": null, "company": "Acme", "avatar_url": null,
+      "id": "…",
+      "phone": "+14155550123",
+      "name": "Jane Doe",
+      "email": null,
+      "company": "Acme",
+      "avatar_url": null,
       "tags": [{ "id": "…", "name": "vip", "color": "#3b82f6" }],
-      "created_at": "…", "updated_at": "…"
+      "created_at": "…",
+      "updated_at": "…"
     }
   ],
   "meta": { "next_cursor": "…" }
@@ -228,7 +233,7 @@ returns fast — poll `GET /api/v1/broadcasts/{id}` for progress.
 
 ```bash
 curl -X POST https://your-crm.example.com/api/v1/broadcasts \
-  -H "Authorization: Bearer wacrm_live_xxx" \
+  -H "Authorization: Bearer fire_live_xxx" \
   -H "Content-Type: application/json" \
   -d '{
         "name": "July promo",
@@ -283,23 +288,23 @@ last page.
 
 ## Webhooks
 
-Rather than polling, register an endpoint and wacrm will POST to it when
+Rather than polling, register an endpoint and Fire Workspace will POST to it when
 things happen in your account. **Migration required:** apply
 `supabase/migrations/028_webhook_endpoints.sql`.
 
 ### Events
 
-| Event                    | Fires when                                        |
-| ------------------------ | ------------------------------------------------- |
-| `message.received`       | An inbound message arrives from a contact         |
-| `message.status_updated` | A message you sent changed delivery status        |
-| `conversation.created`   | A new conversation is opened for a contact        |
+| Event                    | Fires when                                 |
+| ------------------------ | ------------------------------------------ |
+| `message.received`       | An inbound message arrives from a contact  |
+| `message.status_updated` | A message you sent changed delivery status |
+| `conversation.created`   | A new conversation is opened for a contact |
 
 ### Managing endpoints
 
 All under scope `webhooks:manage`.
 
-- `POST /api/v1/webhooks` — register `{ "url": "https://…", "events": ["message.received"] }`. `url` must be `https://`. **The response includes `secret` exactly once** — store it to verify signatures; wacrm keeps only an encrypted copy.
+- `POST /api/v1/webhooks` — register `{ "url": "https://…", "events": ["message.received"] }`. `url` must be `https://`. **The response includes `secret` exactly once** — store it to verify signatures; Fire Workspace keeps only an encrypted copy.
 - `GET /api/v1/webhooks` — list your endpoints (never returns the secret).
 - `GET /api/v1/webhooks/{id}` — read one.
 - `PATCH /api/v1/webhooks/{id}` — update `url`, `events`, or `is_active` (re-enabling clears the failure counter).
@@ -307,9 +312,9 @@ All under scope `webhooks:manage`.
 
 ```bash
 curl -X POST https://your-crm.example.com/api/v1/webhooks \
-  -H "Authorization: Bearer wacrm_live_xxx" \
+  -H "Authorization: Bearer fire_live_xxx" \
   -H "Content-Type: application/json" \
-  -d '{ "url": "https://example.com/hooks/wacrm", "events": ["message.received"] }'
+  -d '{ "url": "https://example.com/hooks/fire", "events": ["message.received"] }'
 # → 201 { "data": { "id": "…", "url": "…", "events": [...], "secret": "whsec_…" } }
 ```
 
@@ -324,7 +329,7 @@ delivery uuid you can dedupe on, and `data` varies by `event`:
   "event": "message.received",
   "occurred_at": "2026-07-01T12:00:00.000Z",
   "account_id": "…",
-  "data": { /* per-event, see below */ }
+  "data": {/* per-event, see below */}
 }
 ```
 
@@ -339,19 +344,21 @@ delivery uuid you can dedupe on, and `data` varies by `event`:
 { "whatsapp_message_id": "wamid.…", "conversation_id": "…", "status": "delivered" }
 ```
 
-Headers: `X-Wacrm-Event`, `X-Wacrm-Webhook-Id`, and `X-Wacrm-Signature`.
+Headers: `X-Fire-Event`, `X-Fire-Webhook-Id`, and `X-Fire-Signature`.
 
 ### Verifying the signature
 
-`X-Wacrm-Signature: t=<unix_seconds>,v1=<hex>` where `v1 =
+`X-Fire-Signature: t=<unix_seconds>,v1=<hex>` where `v1 =
 HMAC-SHA256(secret, "${t}.${rawBody}")`. Recompute it over the **raw
 request body** and compare in constant time; reject if `t` is more than
 a few minutes old (replay protection).
 
 ```js
 const [, t, v1] = header.match(/t=(\d+),v1=([0-9a-f]+)/);
-const expected = crypto.createHmac('sha256', secret)
-  .update(`${t}.${rawBody}`).digest('hex');
+const expected = crypto
+  .createHmac('sha256', secret)
+  .update(`${t}.${rawBody}`)
+  .digest('hex');
 const ok = crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
 ```
 
@@ -359,7 +366,7 @@ const ok = crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1));
 
 Delivery is **best-effort**: a single attempt per event with a short
 timeout, and **redirects are not followed**. `message.status_updated`
-covers messages wacrm stores (inbox + API sends), not broadcast-only
+covers messages Fire Workspace stores (inbox + API sends), not broadcast-only
 sends, and — because providers re-send and re-order status callbacks —
 the same status may arrive more than once or out of order; **dedupe on
 `id` and don't assume ordering**. Each consecutive failure increments
@@ -378,6 +385,6 @@ internal targets are refused at delivery time.
 
 The public API now covers messaging, contacts, conversations,
 broadcasts, and outbound webhooks — the full scope of
-[#245](https://github.com/ArnasDon/wacrm/issues/245). Future ideas
+#245. Future ideas
 (deals/pipelines, templates, flows, a delivery queue for webhooks) are
 not yet scheduled.
