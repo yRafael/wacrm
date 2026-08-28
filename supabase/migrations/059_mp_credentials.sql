@@ -28,6 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_mp_credentials_account
 -- RLS — service role only (webhooks and checkout use supabaseAdmin)
 ALTER TABLE account_mercado_pago_credentials ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS mp_credentials_service_only ON account_mercado_pago_credentials;
 CREATE POLICY mp_credentials_service_only ON account_mercado_pago_credentials
   FOR ALL USING (false);
 

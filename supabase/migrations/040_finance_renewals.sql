@@ -157,13 +157,24 @@ CREATE POLICY renewals_select ON renewals
 -- EXTEND notifications.type CHECK
 -- ============================================================
 ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+-- Sanitize any rows with types not in the allowed set before adding the constraint.
+UPDATE notifications SET type = 'conversation_assigned'
+WHERE type NOT IN (
+  'conversation_assigned',
+  'renewal_due',
+  'renewal_paid',
+  'payment_received',
+  'whatsapp_disconnected',
+  'lead_converted'
+);
 ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
   CHECK (type IN (
     'conversation_assigned',
     'renewal_due',
     'renewal_paid',
     'payment_received',
-    'whatsapp_disconnected'
+    'whatsapp_disconnected',
+    'lead_converted'
   ));
 
 -- ============================================================

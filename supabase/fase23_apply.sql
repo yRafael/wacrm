@@ -298,13 +298,23 @@ CREATE POLICY renewals_select ON renewals
 -- EXTEND notifications.type CHECK
 -- ============================================================
 ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+UPDATE notifications SET type = 'conversation_assigned'
+WHERE type NOT IN (
+  'conversation_assigned',
+  'renewal_due',
+  'renewal_paid',
+  'payment_received',
+  'whatsapp_disconnected',
+  'lead_converted'
+);
 ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
   CHECK (type IN (
     'conversation_assigned',
     'renewal_due',
     'renewal_paid',
     'payment_received',
-    'whatsapp_disconnected'
+    'whatsapp_disconnected',
+    'lead_converted'
   ));
 
 -- ============================================================
@@ -500,7 +510,7 @@ END $$;
 -- ============================================================
 -- 041_leads.sql — Leads via deals/pipelines (Fase 3, doc Cap. 47)
 --
--- The workspace reuses the wacrm Kanban (deals + pipelines) as its
+-- The workspace reuses the Fire Workspace Kanban (deals + pipelines) as its
 -- Leads board. A deal IS a lead: it already points at a contact, so
 -- history is preserved across conversion (migration 004 keeps the
 -- contact_id via ON DELETE SET NULL).
@@ -523,6 +533,15 @@ END $$;
 -- EXTEND notifications.type CHECK with lead_converted
 -- ============================================================
 ALTER TABLE notifications DROP CONSTRAINT IF EXISTS notifications_type_check;
+UPDATE notifications SET type = 'conversation_assigned'
+WHERE type NOT IN (
+  'conversation_assigned',
+  'renewal_due',
+  'renewal_paid',
+  'payment_received',
+  'whatsapp_disconnected',
+  'lead_converted'
+);
 ALTER TABLE notifications ADD CONSTRAINT notifications_type_check
   CHECK (type IN (
     'conversation_assigned',

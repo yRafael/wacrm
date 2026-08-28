@@ -1,7 +1,7 @@
 -- ============================================================
 -- 041_leads.sql — Leads via deals/pipelines (Fase 3, doc Cap. 47)
 --
--- The workspace reuses the wacrm Kanban (deals + pipelines) as its
+-- The workspace reuses the Fire Workspace Kanban (deals + pipelines) as its
 -- Leads board. A deal IS a lead: it already points at a contact, so
 -- history is preserved across conversion (migration 004 keeps the
 -- contact_id via ON DELETE SET NULL).
