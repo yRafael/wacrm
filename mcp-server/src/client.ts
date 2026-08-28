@@ -1,22 +1,22 @@
 // ============================================================
-// wacrm public API client.
+// Fire Workspace public API client.
 //
 // A thin wrapper over the `/api/v1` REST surface. It attaches the
 // bearer key, unwraps the `{ data }` / `{ error }` envelope, and
-// turns API failures into a typed WacrmApiError the tools can render
+// turns API failures into a typed FireApiError the tools can render
 // cleanly. Nothing here knows about MCP — it's just the CRM API.
 // ============================================================
 
 import type { Config } from './config.js';
 
-/** A structured error from the wacrm API envelope (`{ error: { code, message } }`). */
-export class WacrmApiError extends Error {
+/** A structured error from the Fire Workspace API envelope (`{ error: { code, message } }`). */
+export class FireApiError extends Error {
   readonly status: number;
   readonly code: string;
 
   constructor(status: number, code: string, message: string) {
     super(message);
-    this.name = 'WacrmApiError';
+    this.name = 'FireApiError';
     this.status = status;
     this.code = code;
   }
@@ -27,7 +27,7 @@ export interface Paginated<T> {
   next_cursor: string | null;
 }
 
-export class WacrmClient {
+export class FireClient {
   private readonly baseUrl: string;
   private readonly apiKey: string;
 
@@ -39,7 +39,10 @@ export class WacrmClient {
   private async request<T>(
     method: string,
     path: string,
-    options: { query?: Record<string, string | number | undefined>; body?: unknown } = {},
+    options: {
+      query?: Record<string, string | number | undefined>;
+      body?: unknown;
+    } = {}
   ): Promise<{ data: T; meta?: { next_cursor: string | null } }> {
     const url = new URL(`${this.baseUrl}/api/v1${path}`);
     if (options.query) {
@@ -63,13 +66,14 @@ export class WacrmClient {
       res = await fetch(url, {
         method,
         headers,
-        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+        body:
+          options.body !== undefined ? JSON.stringify(options.body) : undefined,
       });
     } catch (err) {
-      throw new WacrmApiError(
+      throw new FireApiError(
         0,
         'network_error',
-        `Could not reach wacrm at ${this.baseUrl}: ${(err as Error).message}`,
+        `Could not reach Fire Workspace at ${this.baseUrl}: ${(err as Error).message}`
       );
     }
 
@@ -82,29 +86,34 @@ export class WacrmClient {
       } catch {
         // Non-JSON body (e.g. an upstream proxy error page).
         if (!res.ok) {
-          throw new WacrmApiError(res.status, 'internal', text.slice(0, 500));
+          throw new FireApiError(res.status, 'internal', text.slice(0, 500));
         }
       }
     }
 
     if (!res.ok) {
-      const envelope = payload as { error?: { code?: string; message?: string } } | undefined;
+      const envelope = payload as
+        { error?: { code?: string; message?: string } } | undefined;
       const code = envelope?.error?.code ?? 'internal';
-      let message = envelope?.error?.message ?? `Request failed with status ${res.status}`;
+      let message =
+        envelope?.error?.message ?? `Request failed with status ${res.status}`;
       if (res.status === 429) {
         const retryAfter = res.headers.get('Retry-After');
         if (retryAfter) message += ` (retry after ${retryAfter}s)`;
       }
-      throw new WacrmApiError(res.status, code, message);
+      throw new FireApiError(res.status, code, message);
     }
 
-    const envelope = payload as { data: T; meta?: { next_cursor: string | null } };
+    const envelope = payload as {
+      data: T;
+      meta?: { next_cursor: string | null };
+    };
     return { data: envelope.data, meta: envelope.meta };
   }
 
   private async list<T>(
     path: string,
-    query: Record<string, string | number | undefined>,
+    query: Record<string, string | number | undefined>
   ): Promise<Paginated<T>> {
     const res = await this.request<T[]>('GET', path, { query });
     return { data: res.data, next_cursor: res.meta?.next_cursor ?? null };
@@ -142,7 +151,9 @@ export class WacrmClient {
   }
 
   updateContact(id: string, body: unknown): Promise<{ data: unknown }> {
-    return this.request('PATCH', `/contacts/${encodeURIComponent(id)}`, { body });
+    return this.request('PATCH', `/contacts/${encodeURIComponent(id)}`, {
+      body,
+    });
   }
 
   // --- Conversations ------------------------------------------------
@@ -162,9 +173,12 @@ export class WacrmClient {
 
   listConversationMessages(
     id: string,
-    query: { limit?: number; cursor?: string },
+    query: { limit?: number; cursor?: string }
   ): Promise<Paginated<unknown>> {
-    return this.list(`/conversations/${encodeURIComponent(id)}/messages`, query);
+    return this.list(
+      `/conversations/${encodeURIComponent(id)}/messages`,
+      query
+    );
   }
 
   // --- Broadcasts ---------------------------------------------------
