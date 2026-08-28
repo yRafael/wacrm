@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 // ============================================================
 // useCountUp — anima um número de 0 até `target` usando
@@ -11,7 +11,7 @@
 //   teste importar sem disparar navegador.
 // ============================================================
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from 'react';
 
 /** easeOutCubic: começa rápido, desacelera no fim. */
 export function easeOutCubic(t: number): number {
@@ -19,10 +19,13 @@ export function easeOutCubic(t: number): number {
 }
 
 function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+  if (
+    typeof window === 'undefined' ||
+    typeof window.matchMedia !== 'function'
+  ) {
     return false;
   }
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 /** Animates `target` from its current value over `durationMs`. */

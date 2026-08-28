@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import type { Notification } from "@/types";
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import type { Notification } from '@/types';
 
 /**
  * Count of unread notifications for the current user. Used by the
@@ -48,41 +48,41 @@ async function bootChannel(): Promise<void> {
   // already-subscribed channel (which throws).
   const existing = supabase
     .getChannels()
-    .find((c) => c.topic === "realtime:notifications-unread-count");
+    .find((c) => c.topic === 'realtime:notifications-unread-count');
   if (existing) return;
 
   // Initial count (head:true skips fetching rows — we only need the
   // `count` supabase-js returns alongside the empty response body).
   const { count, error } = await supabase
-    .from("notifications")
-    .select("*", { count: "exact", head: true })
-    .is("read_at", null);
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .is('read_at', null);
   if (!error && count != null) {
     currentCount = count;
     notify();
   }
 
   supabase
-    .channel("notifications-unread-count")
+    .channel('notifications-unread-count')
     .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "notifications" },
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'notifications' },
       (payload) => {
-        if (payload.eventType === "INSERT") {
+        if (payload.eventType === 'INSERT') {
           const row = payload.new as Notification;
           if (!row.read_at) currentCount += 1;
-        } else if (payload.eventType === "UPDATE") {
+        } else if (payload.eventType === 'UPDATE') {
           // Updates here only ever set read_at (marking a notification
           // read). Derive purely from the new row so we don't rely on
           // payload.old columns, which require REPLICA IDENTITY FULL.
           const newRow = payload.new as Notification;
           if (newRow.read_at) currentCount = Math.max(0, currentCount - 1);
-        } else if (payload.eventType === "DELETE") {
+        } else if (payload.eventType === 'DELETE') {
           const oldRow = payload.old as Partial<Notification>;
           if (!oldRow.read_at) currentCount = Math.max(0, currentCount - 1);
         }
         notify();
-      },
+      }
     )
     .subscribe();
 }
@@ -96,7 +96,7 @@ export function useUnreadNotifications(): number {
 
     if (!booting) {
       booting = bootChannel().catch((err) => {
-        console.error("[unread-notifications] realtime failed:", err);
+        console.error('[unread-notifications] realtime failed:', err);
         // Allow a later mount to retry a transient failure.
         booting = null;
       });
