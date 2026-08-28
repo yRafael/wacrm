@@ -95,7 +95,7 @@ interface NavItem {
 
 /**
  * A group of sidebar links. `headerKey` is the i18n key for the block
- * header; the top block (Dashboard + Fire Pulse) omits it so it renders
+ * header; the top block (Dashboard + Fire Radar) omits it so it renders
  * without a heading. Blocks mirror the reference panel's sections
  * (Atendimento / Gestão / Dashboard / Sistema).
  */
@@ -106,10 +106,10 @@ interface NavBlock {
 
 const navBlocks: NavBlock[] = [
   {
-    // Top block — Dashboard + Fire Pulse, no header.
+    // Top block — Dashboard + Fire Radar, no header.
     items: [
       { href: '/dashboard', labelKey: 'dashboard', icon: LayoutDashboard },
-      { href: '/pulse', labelKey: 'pulse', icon: Activity },
+      { href: '/pulse', labelKey: 'radar', icon: Activity },
     ],
   },
   {

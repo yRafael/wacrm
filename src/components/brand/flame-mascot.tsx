@@ -1,29 +1,14 @@
-"use client";
+'use client';
 
-// ============================================================
-// FlameMascot — o foguinho da Fire Play
-//
-// SVG vetorial de uma chama com olhos expressivos. Reutilizável de
-// 20px (sidebar) a 200px+ (hero). Animações por CSS puro:
-//   · flame-flicker  → a chama toda treme/balança
-//   · blink          → piscada a cada ~4,6s (scaleY dos olhos)
-//   · flame-sway     → balanço suave do corpo (opcional)
-// Tudo respeita prefers-reduced-motion (zera a animação no
-// globals.css).
-//
-// Expressões:
-//   · normal → olhos redondos, boca serena
-//   · happy  → olhos em arco (fechados sorrindo), sorriso aberto
-//   · busy   → olhos arregalados, sobrancelha franzida, boca tensa
-//
-// IDs de gradiente usam useId() para que várias instâncias na mesma
-// tela nunca colidam.
-// ============================================================
+// NOTE: The original FlameMascot (flame with facial expressions) has been
+// replaced by PulseWave — an abstract waveform symbol (Opção A per the
+// Fire Control design doc) that aligns with the data-oriented interface.
+// The FlameMascot component is preserved below for backward-compatible
+// imports (e.g. sidebar icon) but no longer drives the dashboard greeting.
+import { useId } from 'react';
+import { cn } from '@/lib/utils';
 
-import { useId } from "react";
-import { cn } from "@/lib/utils";
-
-export type FlameExpression = "normal" | "happy" | "busy";
+export type FlameExpression = 'normal' | 'happy' | 'busy';
 
 interface FlameMascotProps {
   /** Largura em px (a altura é ~1,15×). Default 48. */
@@ -41,17 +26,17 @@ const EYE_RIGHT_X = 62;
 
 export function FlameMascot({
   size = 48,
-  expression = "normal",
+  expression = 'normal',
   animated = true,
   className,
-  ariaLabel = "Fire Play",
+  ariaLabel = 'Fire Play',
 }: FlameMascotProps) {
-  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, '');
   const outerId = `flame-outer-${uid}`;
   const coreId = `flame-core-${uid}`;
 
-  const happy = expression === "happy";
-  const busy = expression === "busy";
+  const happy = expression === 'happy';
+  const busy = expression === 'busy';
 
   return (
     <svg
@@ -61,9 +46,9 @@ export function FlameMascot({
       fill="none"
       role="img"
       aria-label={ariaLabel}
-      className={cn(animated && "animate-flame-flicker", className)}
+      className={cn(animated && 'animate-flame-flicker', className)}
       // Deixa o flicker (escala > 1) respirar sem cortar a silhueta.
-      style={{ overflow: "visible" }}
+      style={{ overflow: 'visible' }}
     >
       <defs>
         <linearGradient
@@ -104,13 +89,20 @@ export function FlameMascot({
       />
 
       {/* Brilho no topo — "brasa acesa" */}
-      <ellipse cx="38" cy="30" rx="5" ry="9" fill="var(--flame-3)" opacity={0.5} />
+      <ellipse
+        cx="38"
+        cy="30"
+        rx="5"
+        ry="9"
+        fill="var(--flame-3)"
+        opacity={0.5}
+      />
 
       {/* Olhos — grupo anima (piscada) mantendo o centro dos olhos */}
       <g
-        className={cn(animated && "animate-blink")}
+        className={cn(animated && 'animate-blink')}
         style={{
-          transformBox: "fill-box",
+          transformBox: 'fill-box',
           transformOrigin: `center ${EYE_Y}px`,
         }}
       >
@@ -133,8 +125,20 @@ export function FlameMascot({
           </>
         ) : (
           <>
-            <ellipse cx={EYE_LEFT_X} cy={EYE_Y} rx="3.4" ry={busy ? 5 : 4.4} fill="var(--foreground)" />
-            <ellipse cx={EYE_RIGHT_X} cy={EYE_Y} rx="3.4" ry={busy ? 5 : 4.4} fill="var(--foreground)" />
+            <ellipse
+              cx={EYE_LEFT_X}
+              cy={EYE_Y}
+              rx="3.4"
+              ry={busy ? 5 : 4.4}
+              fill="var(--foreground)"
+            />
+            <ellipse
+              cx={EYE_RIGHT_X}
+              cy={EYE_Y}
+              rx="3.4"
+              ry={busy ? 5 : 4.4}
+              fill="var(--foreground)"
+            />
           </>
         )}
       </g>

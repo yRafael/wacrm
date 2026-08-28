@@ -28,7 +28,9 @@ export function TemplatesPlaceholder() {
       <Alert className="border-border bg-card">
         <MessageSquareText className="size-4" />
         <AlertTitle className="text-foreground">{t('title')}</AlertTitle>
-        <AlertDescription className="text-muted-foreground">{t('body')}</AlertDescription>
+        <AlertDescription className="text-muted-foreground">
+          {t('body')}
+        </AlertDescription>
       </Alert>
     </section>
   );

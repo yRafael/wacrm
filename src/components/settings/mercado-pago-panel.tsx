@@ -215,6 +215,17 @@ export function MercadoPagoPanel() {
                 />
                 <p className="text-muted-foreground text-xs">{t('webhookSecretHelp')}</p>
               </div>
+
+              {/* Webhook URL guidance */}
+              <div className="rounded-md border border-border bg-muted/50 p-3">
+                <p className="text-muted-foreground text-xs font-medium">{t('webhookUrlLabel')}</p>
+                <code className="text-foreground mt-1 block break-all text-xs">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/mercado-pago` : '/api/webhooks/mercado-pago'}
+                </code>
+                <p className="text-muted-foreground mt-2 text-[11px]">
+                  {t('webhookUrlHelp')}
+                </p>
+              </div>
             </div>
 
             <div className="flex gap-2">

@@ -42,6 +42,9 @@ import { SettingsChip } from './settings-chip';
 
 type BusyAction = 'refresh' | 'disconnect' | 'delete' | null;
 
+/** Safety timeout: if an action takes longer than this, auto-clear busy. */
+const BUSY_TIMEOUT_MS = 30_000;
+
 /**
  * Status pill metadata. Colour follows the semantic palette used across
  * the settings redesign (emerald ok / amber attention / red error);
@@ -94,7 +97,7 @@ function formatQrExpiry(iso: string, now: number): string {
 export function WhatsAppSessions() {
   const t = useTranslations('Settings.whatsappSessions');
   const supabase = createClient();
-  const { accountId, loading: authLoading, canEditSettings } = useAuth();
+  const { accountId, loading: authLoading, canCreateWhatsAppSession, canManageWhatsAppSessions } = useAuth();
 
   const [sessions, setSessions] = useState<WhatsAppSessionRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -105,6 +108,28 @@ export function WhatsAppSessions() {
   // Tick so QR-expiry / "last activity" labels advance without a tight
   // timer.
   const [now, setNow] = useState(() => Date.now());
+
+  // Safety net: if any action gets stuck (network error, race condition,
+  // etc.) the busy state is auto-cleared after BUSY_TIMEOUT_MS so the
+  // buttons become clickable again.
+  useEffect(() => {
+    const entries = Object.entries(busy).filter(
+      ([, v]) => v !== null
+    ) as [string, BusyAction][];
+    if (entries.length === 0) return;
+
+    const timer = setTimeout(() => {
+      setBusy((prev) => {
+        const next = { ...prev };
+        for (const [id] of entries) {
+          if (next[id]) delete next[id];
+        }
+        return next;
+      });
+    }, BUSY_TIMEOUT_MS);
+
+    return () => clearTimeout(timer);
+  }, [busy]);
 
   // Guards against re-fetching when the load effect re-runs for reasons
   // unrelated to actually switching accounts (Supabase token-refresh
@@ -124,6 +149,7 @@ export function WhatsAppSessions() {
       forbidden: t('errorForbidden'),
       unavailable_service: t('errorConnectionClosed'),
       max_reconnect_attempts: t('errorMaxReconnect'),
+      qr_render_failed: t('errorQrRenderFailed'),
     };
     // Dynamic keys: reconnect_gap_<N>min
     const gapMatch = errorKey.match(/^reconnect_gap_(\d+)min$/);
@@ -218,6 +244,14 @@ export function WhatsAppSessions() {
     async (session: WhatsAppSessionRow, action: Exclude<BusyAction, null>) => {
       if (action === 'delete' && !window.confirm(t('deleteConfirm'))) return;
       setBusy((prev) => ({ ...prev, [session.id]: action }));
+
+      // Optimistic delete: remove from UI immediately so the user
+      // perceives instant feedback.  If the server call fails we
+      // re-insert the row.
+      if (action === 'delete') {
+        setSessions((prev) => prev.filter((s) => s.id !== session.id));
+      }
+
       try {
         // refresh → /refresh, disconnect → /disconnect; delete has no
         // action suffix — it's the resource route itself.
@@ -228,6 +262,17 @@ export function WhatsAppSessions() {
         const res = await fetch(path, { method: action === 'delete' ? 'DELETE' : 'POST' });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
+          // Roll back optimistic removal on failure.
+          if (action === 'delete') {
+            setSessions((prev) => {
+              if (prev.some((s) => s.id === session.id)) return prev;
+              return [...prev, session].sort(
+                (a, b) =>
+                  new Date(a.created_at).getTime() -
+                  new Date(b.created_at).getTime()
+              );
+            });
+          }
           toast.error(data.error ?? t('actionFailed'));
           return;
         }
@@ -238,8 +283,22 @@ export function WhatsAppSessions() {
               ? t('disconnected')
               : t('deleted')
         );
-        await load();
+        // For non-delete actions, refresh the list from the server.
+        if (action !== 'delete') {
+          await load();
+        }
       } catch {
+        // Roll back optimistic removal on network failure.
+        if (action === 'delete') {
+          setSessions((prev) => {
+            if (prev.some((s) => s.id === session.id)) return prev;
+            return [...prev, session].sort(
+              (a, b) =>
+                new Date(a.created_at).getTime() -
+                new Date(b.created_at).getTime()
+            );
+          });
+        }
         toast.error(t('actionFailed'));
       } finally {
         setBusy((prev) => {
@@ -269,7 +328,7 @@ export function WhatsAppSessions() {
         title={t('title')}
         description={t('description')}
         action={
-          canEditSettings ? (
+          canCreateWhatsAppSession ? (
             <Button size="sm" onClick={() => setCreateOpen(true)}>
               <Plus />
               {t('newSession')}
@@ -278,7 +337,7 @@ export function WhatsAppSessions() {
         }
       />
 
-      {!canEditSettings ? (
+      {!canCreateWhatsAppSession ? (
         <Alert className="bg-card border-border mb-4">
           <AlertTriangle className="size-4" />
           <AlertTitle className="text-foreground">
@@ -365,7 +424,7 @@ export function WhatsAppSessions() {
                     ) : null}
                   </div>
 
-                  {canEditSettings ? (
+                  {canCreateWhatsAppSession ? (
                     <div className="flex shrink-0 items-center gap-2">
                       {session.status !== 'CONNECTED' ? (
                         <Button
@@ -401,20 +460,22 @@ export function WhatsAppSessions() {
                           {t('disconnect')}
                         </Button>
                       ) : null}
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        disabled={sessionBusy !== null}
-                        onClick={() => void runAction(session, 'delete')}
-                      >
-                        {sessionBusy === 'delete' ? (
-                          <Loader2 className="size-3.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="size-3.5" />
-                        )}
-                        {t('delete')}
-                      </Button>
+                      {canManageWhatsAppSessions ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          disabled={sessionBusy !== null}
+                          onClick={() => void runAction(session, 'delete')}
+                        >
+                          {sessionBusy === 'delete' ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-3.5" />
+                          )}
+                          {t('delete')}
+                        </Button>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
@@ -440,6 +501,39 @@ export function WhatsAppSessions() {
                           time: formatQrExpiry(session.qr_expires_at, now),
                         })}
                       </p>
+                    ) : null}
+                    {canCreateWhatsAppSession ? (
+                      <div className="mt-1 flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={sessionBusy !== null}
+                          onClick={() => void runAction(session, 'refresh')}
+                        >
+                          {sessionBusy === 'refresh' ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <RefreshCw className="size-3.5" />
+                          )}
+                          {t('refreshQr')}
+                        </Button>
+                        {canManageWhatsAppSessions ? (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive hover:text-destructive"
+                            disabled={sessionBusy !== null}
+                            onClick={() => void runAction(session, 'delete')}
+                          >
+                            {sessionBusy === 'delete' ? (
+                              <Loader2 className="size-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-3.5" />
+                            )}
+                            {t('delete')}
+                          </Button>
+                        ) : null}
+                      </div>
                     ) : null}
                   </div>
                 ) : null}
