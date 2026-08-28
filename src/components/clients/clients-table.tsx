@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import { Link as LinkIcon, UserCheck } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { Link as LinkIcon, UserCheck } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
 import {
   daysUntil,
   expiryStatus,
   type ExpiryStatus,
-} from "@/lib/iptv/client-stats";
-import { Badge } from "@/components/ui/badge";
-import { SkeletonCard } from "@/components/dashboard/skeleton";
-import type { Contact, IptvCredential } from "@/types";
+} from '@/lib/iptv/client-stats';
+import { Badge } from '@/components/ui/badge';
+import { SkeletonCard } from '@/components/dashboard/skeleton';
+import type { Contact, IptvCredential } from '@/types';
 
-type ClientFilter = "all" | "active" | "expiring" | "expired";
+type ClientFilter = 'all' | 'active' | 'expiring' | 'expired';
 
 interface ClientRow {
   contact: Contact;
@@ -23,31 +23,37 @@ interface ClientRow {
   status: ExpiryStatus;
 }
 
-const STATUS_BADGE: Record<ExpiryStatus, { variant: string; labelKey: string }> = {
-  active: { variant: "default", labelKey: "statusActive" },
-  expiring_soon: { variant: "outline", labelKey: "statusExpiring" },
-  expired: { variant: "destructive", labelKey: "statusExpired" },
-  none: { variant: "secondary", labelKey: "statusNone" },
+const STATUS_BADGE: Record<
+  ExpiryStatus,
+  { variant: string; labelKey: string }
+> = {
+  active: { variant: 'default', labelKey: 'statusActive' },
+  expiring_soon: { variant: 'outline', labelKey: 'statusExpiring' },
+  expired: { variant: 'destructive', labelKey: 'statusExpired' },
+  none: { variant: 'secondary', labelKey: 'statusNone' },
 };
 
 export function ClientsTable() {
-  const t = useTranslations("Clients");
+  const t = useTranslations('Clients');
   const db = createClient();
 
   const [rows, setRows] = useState<ClientRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<ClientFilter>("all");
+  const [filter, setFilter] = useState<ClientFilter>('all');
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       const [contactRes, credRes] = await Promise.all([
-        db.from("contacts").select("*").order("created_at", { ascending: false }),
         db
-          .from("iptv_credentials")
-          .select("*")
-          .is("deleted_at", null)
-          .order("created_at", { ascending: false }),
+          .from('contacts')
+          .select('*')
+          .order('created_at', { ascending: false }),
+        db
+          .from('iptv_credentials')
+          .select('*')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false }),
       ]);
       if (cancelled) return;
       const contacts = (contactRes.data as Contact[]) ?? [];
@@ -57,7 +63,8 @@ export function ClientsTable() {
       // most recent active one (soft-deletes excluded above).
       const latestByContact = new Map<string, IptvCredential>();
       for (const c of creds) {
-        if (!latestByContact.has(c.contact_id)) latestByContact.set(c.contact_id, c);
+        if (!latestByContact.has(c.contact_id))
+          latestByContact.set(c.contact_id, c);
       }
 
       const now = new Date();
@@ -83,12 +90,12 @@ export function ClientsTable() {
 
   const filtered = useMemo(() => {
     switch (filter) {
-      case "active":
-        return rows.filter((r) => r.status === "active");
-      case "expiring":
-        return rows.filter((r) => r.status === "expiring_soon");
-      case "expired":
-        return rows.filter((r) => r.status === "expired");
+      case 'active':
+        return rows.filter((r) => r.status === 'active');
+      case 'expiring':
+        return rows.filter((r) => r.status === 'expiring_soon');
+      case 'expired':
+        return rows.filter((r) => r.status === 'expired');
       default:
         return rows;
     }
@@ -106,16 +113,16 @@ export function ClientsTable() {
 
   const counts: Record<ClientFilter, number> = {
     all: rows.length,
-    active: rows.filter((r) => r.status === "active").length,
-    expiring: rows.filter((r) => r.status === "expiring_soon").length,
-    expired: rows.filter((r) => r.status === "expired").length,
+    active: rows.filter((r) => r.status === 'active').length,
+    expiring: rows.filter((r) => r.status === 'expiring_soon').length,
+    expired: rows.filter((r) => r.status === 'expired').length,
   };
 
   const filters: { key: ClientFilter; labelKey: string }[] = [
-    { key: "all", labelKey: "filterAll" },
-    { key: "active", labelKey: "filterActive" },
-    { key: "expiring", labelKey: "filterExpiring" },
-    { key: "expired", labelKey: "filterExpired" },
+    { key: 'all', labelKey: 'filterAll' },
+    { key: 'active', labelKey: 'filterActive' },
+    { key: 'expiring', labelKey: 'filterExpiring' },
+    { key: 'expired', labelKey: 'filterExpired' },
   ];
 
   return (
@@ -128,32 +135,34 @@ export function ClientsTable() {
             onClick={() => setFilter(f.key)}
             className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm transition-colors ${
               filter === f.key
-                ? "border-primary bg-primary/10 text-primary"
-                : "border-border bg-card text-muted-foreground hover:bg-muted"
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border bg-card text-muted-foreground hover:bg-muted'
             }`}
           >
             {t(f.labelKey)}
-            <span className="text-xs tabular-nums opacity-70">{counts[f.key]}</span>
+            <span className="text-xs tabular-nums opacity-70">
+              {counts[f.key]}
+            </span>
           </button>
         ))}
       </div>
 
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-6 py-12 text-center">
-          <UserCheck className="size-8 text-muted-foreground/50" />
-          <p className="text-sm text-muted-foreground">{t("empty")}</p>
+        <div className="border-border flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center">
+          <UserCheck className="text-muted-foreground/50 size-8" />
+          <p className="text-muted-foreground text-sm">{t('empty')}</p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
+        <div className="border-border bg-card overflow-hidden rounded-xl border">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <th className="px-4 py-3 font-medium">{t("colContact")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colPhone")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colUser")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colExpiry")}</th>
-                  <th className="px-4 py-3 font-medium">{t("colStatus")}</th>
+                <tr className="border-border text-muted-foreground border-b text-left text-xs tracking-wider uppercase">
+                  <th className="px-4 py-3 font-medium">{t('colContact')}</th>
+                  <th className="px-4 py-3 font-medium">{t('colPhone')}</th>
+                  <th className="px-4 py-3 font-medium">{t('colUser')}</th>
+                  <th className="px-4 py-3 font-medium">{t('colExpiry')}</th>
+                  <th className="px-4 py-3 font-medium">{t('colStatus')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -162,23 +171,33 @@ export function ClientsTable() {
                   return (
                     <tr
                       key={r.contact.id}
-                      className="border-b border-border/60 last:border-0 hover:bg-muted/40"
+                      className="border-border/60 hover:bg-muted/40 border-b last:border-0"
                     >
                       <td className="px-4 py-3">
-                        <span className="flex items-center gap-2 font-medium text-foreground">
-                          <LinkIcon className="size-3.5 text-muted-foreground" />
-                          {r.contact.name || r.contact.phone || t("noName")}
+                        <span className="text-foreground flex items-center gap-2 font-medium">
+                          <LinkIcon className="text-muted-foreground size-3.5" />
+                          {r.contact.name || r.contact.phone || t('noName')}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground">{r.contact.phone || "—"}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {r.credential?.username || "—"}
+                      <td className="text-muted-foreground px-4 py-3">
+                        {r.contact.phone || '—'}
                       </td>
-                      <td className="px-4 py-3 tabular-nums text-muted-foreground">
-                        {r.expiresAt ? formatDate(r.expiresAt) : "—"}
+                      <td className="text-muted-foreground px-4 py-3">
+                        {r.credential?.username || '—'}
+                      </td>
+                      <td className="text-muted-foreground px-4 py-3 tabular-nums">
+                        {r.expiresAt ? formatDate(r.expiresAt) : '—'}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant={badge.variant as "default" | "destructive" | "outline" | "secondary"}>
+                        <Badge
+                          variant={
+                            badge.variant as
+                              | 'default'
+                              | 'destructive'
+                              | 'outline'
+                              | 'secondary'
+                          }
+                        >
                           {t(badge.labelKey)}
                         </Badge>
                       </td>
@@ -195,9 +214,9 @@ export function ClientsTable() {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+  return new Date(iso).toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
 }

@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 // ============================================================
 // PulseActivity — the newest operations events, merged and sorted by
@@ -36,7 +36,10 @@ const KIND_META: Record<
   { icon: ComponentType<{ className?: string }>; badge: string }
 > = {
   renewal: { icon: RefreshCw, badge: 'bg-primary/10 text-primary' },
-  payment: { icon: CircleDollarSign, badge: 'bg-emerald-500/10 text-emerald-500' },
+  payment: {
+    icon: CircleDollarSign,
+    badge: 'bg-emerald-500/10 text-emerald-500',
+  },
   alert: { icon: AlertTriangle, badge: 'bg-amber-500/10 text-amber-500' },
   credential: { icon: FileKey, badge: 'bg-sky-500/10 text-sky-500' },
 };
@@ -46,11 +49,13 @@ export function PulseActivity({ items, loading }: PulseActivityProps) {
   const { defaultCurrency } = useAuth();
 
   return (
-    <section className="flex h-full flex-col rounded-xl border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
+    <section className="border-border bg-card flex h-full flex-col rounded-xl border">
+      <header className="border-border flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
-          <Zap className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-foreground">{t('title')}</h2>
+          <Zap className="text-muted-foreground h-4 w-4" />
+          <h2 className="text-foreground text-sm font-semibold">
+            {t('title')}
+          </h2>
         </div>
       </header>
 
@@ -74,7 +79,7 @@ export function PulseActivity({ items, loading }: PulseActivityProps) {
           className="rounded-none border-0"
         />
       ) : (
-        <ul className="flex-1 divide-y divide-border">
+        <ul className="divide-border flex-1 divide-y">
           {items.map((item) => {
             const meta = KIND_META[item.kind];
             const Icon = meta.icon;
@@ -83,7 +88,7 @@ export function PulseActivity({ items, loading }: PulseActivityProps) {
               <li key={item.id}>
                 <Link
                   href={item.href ?? '#'}
-                  className={`flex items-center gap-3 px-4 py-3 transition-colors hover:bg-muted/50 ${
+                  className={`hover:bg-muted/50 flex items-center gap-3 px-4 py-3 transition-colors ${
                     item.href ? '' : 'cursor-default'
                   }`}
                 >
@@ -92,10 +97,10 @@ export function PulseActivity({ items, loading }: PulseActivityProps) {
                   >
                     <Icon className="h-4 w-4" />
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-foreground">
+                  <span className="text-foreground min-w-0 flex-1 truncate text-sm">
                     {label}
                   </span>
-                  <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
                     {relativeTime(item.at, t)}
                   </span>
                 </Link>
@@ -113,7 +118,7 @@ export function PulseActivity({ items, loading }: PulseActivityProps) {
 function itemLabel(
   item: PulseActivityItem,
   t: ReturnType<typeof useTranslations<'Pulse.activity'>>,
-  currency: string,
+  currency: string
 ): string {
   switch (item.kind) {
     case 'renewal':
@@ -135,7 +140,7 @@ function itemLabel(
 
 function relativeTime(
   iso: string,
-  t: ReturnType<typeof useTranslations<'Pulse.activity'>>,
+  t: ReturnType<typeof useTranslations<'Pulse.activity'>>
 ): string {
   const diff = Math.max(0, Date.now() - new Date(iso).getTime());
   const sec = Math.round(diff / 1000);

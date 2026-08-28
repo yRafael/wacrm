@@ -4,7 +4,7 @@
  */
 export function ReportEmpty({ label }: { label: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
+    <div className="border-border bg-card text-muted-foreground rounded-xl border p-10 text-center text-sm">
       {label}
     </div>
   );

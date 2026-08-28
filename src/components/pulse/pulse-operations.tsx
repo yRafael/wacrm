@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 // ============================================================
 // PulseOperations — "quem está de plantão agora?" roster.
@@ -20,7 +20,11 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@/components/ui/avatar';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Inbox } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/hooks/use-auth';
@@ -57,14 +61,16 @@ export function PulseOperations({ operators, loading }: PulseOperationsProps) {
   });
 
   return (
-    <section className="flex h-full flex-col rounded-xl border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
+    <section className="border-border bg-card flex h-full flex-col rounded-xl border">
+      <header className="border-border flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
-          <Inbox className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold text-foreground">{t('title')}</h2>
+          <Inbox className="text-muted-foreground h-4 w-4" />
+          <h2 className="text-foreground text-sm font-semibold">
+            {t('title')}
+          </h2>
         </div>
         {!loading && list.length > 0 && (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+          <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums">
             {list.length}
           </span>
         )}
@@ -84,26 +90,26 @@ export function PulseOperations({ operators, loading }: PulseOperationsProps) {
         </div>
       ) : sorted.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-center">
-          <p className="text-sm text-muted-foreground">{t('empty')}</p>
-          <p className="text-xs text-muted-foreground/70">{t('emptyHint')}</p>
+          <p className="text-muted-foreground text-sm">{t('empty')}</p>
+          <p className="text-muted-foreground/70 text-xs">{t('emptyHint')}</p>
         </div>
       ) : (
-        <ul className="flex-1 divide-y divide-border">
+        <ul className="divide-border flex-1 divide-y">
           {/* Unassigned conversations bucket, when there are any. */}
           {unassigned && unassigned.atendimentos > 0 && (
             <li className="flex items-center gap-3 px-4 py-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <Inbox className="h-4 w-4 text-muted-foreground" />
+              <span className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
+                <Inbox className="text-muted-foreground h-4 w-4" />
               </span>
-              <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+              <span className="text-foreground min-w-0 flex-1 truncate text-sm font-medium">
                 {t('unassigned')}
               </span>
               <span className="shrink-0 text-right">
-                <span className="block text-xs tabular-nums text-muted-foreground">
+                <span className="text-muted-foreground block text-xs tabular-nums">
                   {t('atendimentos', { count: unassigned.atendimentos })}
                 </span>
                 {unassigned.pendentes > 0 && (
-                  <span className="block text-[11px] font-medium tabular-nums text-amber-500">
+                  <span className="block text-[11px] font-medium text-amber-500 tabular-nums">
                     {t('pendentes', { count: unassigned.pendentes })}
                   </span>
                 )}
@@ -155,7 +161,7 @@ function OperatorRow({
               {op.avatarUrl ? (
                 <AvatarImage src={op.avatarUrl} alt={op.name} />
               ) : null}
-              <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">
+              <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
                 {op.name.charAt(0).toUpperCase()}
               </AvatarFallback>
               <AvatarBadge
@@ -170,21 +176,21 @@ function OperatorRow({
       </Tooltip>
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-foreground">
+        <span className="text-foreground block truncate text-sm font-medium">
           {op.name}
           {isSelf && (
-            <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="bg-muted text-muted-foreground ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
               {t('you')}
             </span>
           )}
         </span>
-        <span className="block truncate text-xs text-muted-foreground">
+        <span className="text-muted-foreground block truncate text-xs">
           {t('atendimentos', { count: op.atendimentos })}
         </span>
       </span>
 
       {op.pendentes > 0 && (
-        <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-amber-500">
+        <span className="shrink-0 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-semibold text-amber-500 tabular-nums">
           {t('pendentes', { count: op.pendentes })}
         </span>
       )}
@@ -197,7 +203,7 @@ function presenceTooltip(
   status: PresenceStatus,
   lastSeen: string | null,
   now: number,
-  t: ReturnType<typeof useTranslations<'Pulse.operations'>>,
+  t: ReturnType<typeof useTranslations<'Pulse.operations'>>
 ): string {
   switch (status) {
     case 'online':
@@ -212,7 +218,7 @@ function presenceTooltip(
 function lastSeenPT(
   lastSeen: string | null,
   now: number,
-  t: ReturnType<typeof useTranslations<'Pulse.operations'>>,
+  t: ReturnType<typeof useTranslations<'Pulse.operations'>>
 ): string {
   if (!lastSeen) return t('longAgo');
   const last = new Date(lastSeen).getTime();

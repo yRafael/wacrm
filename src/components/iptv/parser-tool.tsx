@@ -5,10 +5,7 @@ import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { Loader2, Search, Copy, Check, Save } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import {
-  parsePanelText,
-  type ParseResult,
-} from '@/lib/iptv/parsers';
+import { parsePanelText, type ParseResult } from '@/lib/iptv/parsers';
 import {
   buildClientMessage,
   CLIENT_TEMPLATE_DEFAULT,
@@ -40,7 +37,7 @@ function toLocalIso(local: string): string | null {
   if (Number.isNaN(d.getTime())) return null;
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(
-    d.getHours(),
+    d.getHours()
   )}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
 
@@ -77,9 +74,7 @@ export function ParserTool() {
 
   // ---- panel text + live parse ------------------------------------------
   const [panelText, setPanelText] = useState('');
-  const [result, setResult] = useState<ParseResult>(() =>
-    parsePanelText(''),
-  );
+  const [result, setResult] = useState<ParseResult>(() => parsePanelText(''));
 
   // Editable (operator-confirmed) fields. Synced from the parse whenever the
   // pasted text changes; untouched by manual edits in between.
@@ -138,7 +133,7 @@ export function ParserTool() {
 
   const selectedContact = useMemo(
     () => contacts.find((c) => c.id === contactId) ?? null,
-    [contacts, contactId],
+    [contacts, contactId]
   );
 
   const filteredContacts = useMemo(() => {
@@ -147,7 +142,7 @@ export function ParserTool() {
       ? contacts.filter(
           (c) =>
             (c.name?.toLowerCase().includes(q) ?? false) ||
-            (c.phone?.includes(q) ?? false),
+            (c.phone?.includes(q) ?? false)
         )
       : contacts;
     return list.slice(0, 50);
@@ -171,7 +166,7 @@ export function ParserTool() {
         expiracao: expiryLocal ? (toLocalIso(expiryLocal) ?? '') : '',
         telefone: selectedContact?.phone ?? undefined,
       }),
-    [template, username, expiryLocal, selectedContact],
+    [template, username, expiryLocal, selectedContact]
   );
 
   async function copyMessage() {
@@ -258,7 +253,7 @@ export function ParserTool() {
 
           {result.matchedLabels.length > 0 && (
             <div className="flex flex-wrap items-center gap-1.5">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-muted-foreground text-xs">
                 {t('matchedLabels')}:
               </span>
               {result.matchedLabels.map((label) => (
@@ -286,13 +281,13 @@ export function ParserTool() {
                 <span className="text-muted-foreground">
                   {t('confidence', { value: result.confidence })}
                 </span>
-                <span className="tabular-nums text-muted-foreground">
+                <span className="text-muted-foreground tabular-nums">
                   {result.confidence}%
                 </span>
               </div>
-              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div className="bg-muted h-1.5 w-full overflow-hidden rounded-full">
                 <div
-                  className="h-1.5 rounded-full bg-primary transition-all"
+                  className="bg-primary h-1.5 rounded-full transition-all"
                   style={{ width: `${result.confidence}%` }}
                 />
               </div>
@@ -354,7 +349,7 @@ export function ParserTool() {
           <div className="space-y-1.5" ref={contactBoxRef}>
             <Label htmlFor="iptv-contact">{t('contactLabel')}</Label>
             <div className="relative">
-              <Search className="pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-4 -translate-y-1/2" />
               <Input
                 id="iptv-contact"
                 value={contactQuery}
@@ -370,9 +365,9 @@ export function ParserTool() {
                 className="pl-8"
               />
               {contactOpen && (
-                <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-border bg-popover shadow-md">
+                <div className="border-border bg-popover absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border shadow-md">
                   {filteredContacts.length === 0 ? (
-                    <p className="px-3 py-2 text-sm text-muted-foreground">
+                    <p className="text-muted-foreground px-3 py-2 text-sm">
                       {t('noContacts')}
                     </p>
                   ) : (
@@ -381,10 +376,10 @@ export function ParserTool() {
                         key={c.id}
                         type="button"
                         onClick={() => pickContact(c)}
-                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
+                        className="hover:bg-accent flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm"
                       >
                         <span className="truncate">{c.name || '—'}</span>
-                        <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                        <span className="text-muted-foreground shrink-0 text-xs tabular-nums">
                           {c.phone}
                         </span>
                       </button>
@@ -398,7 +393,7 @@ export function ParserTool() {
           <Button
             onClick={handleSave}
             disabled={!canSave || saving}
-            className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 w-full"
           >
             {saving ? (
               <Loader2 className="size-4 animate-spin" />
@@ -443,7 +438,7 @@ export function ParserTool() {
                 {copied ? t('copied') : t('copyMessage')}
               </Button>
             </div>
-            <div className="min-h-44 rounded-lg border border-border bg-muted/40 p-3 whitespace-pre-wrap text-sm text-foreground">
+            <div className="border-border bg-muted/40 text-foreground min-h-44 rounded-lg border p-3 text-sm whitespace-pre-wrap">
               {preview}
             </div>
           </div>

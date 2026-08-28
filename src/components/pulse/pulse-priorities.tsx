@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 // ============================================================
 // PulsePriorities — the two "what needs eyes on it now" panels:
@@ -54,7 +54,7 @@ export function PulsePriorities({ priorities, loading }: PulsePrioritiesProps) {
             {t('dueTodayEmpty')}
           </EmptyPanel>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-border divide-y">
             {due.map((item) => (
               <DueRow key={item.id} item={item} t={t} />
             ))}
@@ -79,7 +79,7 @@ export function PulsePriorities({ priorities, loading }: PulsePrioritiesProps) {
             {t('paymentsEmpty')}
           </EmptyPanel>
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-border divide-y">
             {payments.map((item) => (
               <PaymentRow
                 key={item.id}
@@ -118,16 +118,18 @@ function PriorityPanel({
       ? 'bg-red-500/10 text-red-400'
       : 'bg-amber-500/10 text-amber-400';
   return (
-    <section className="flex flex-col rounded-xl border border-border bg-card">
-      <header className="flex items-center justify-between border-b border-border px-4 py-3">
+    <section className="border-border bg-card flex flex-col rounded-xl border">
+      <header className="border-border flex items-center justify-between border-b px-4 py-3">
         <div className="flex items-center gap-2">
-          <span className={`flex h-6 w-6 items-center justify-center rounded-md ${toneClass}`}>
+          <span
+            className={`flex h-6 w-6 items-center justify-center rounded-md ${toneClass}`}
+          >
             <Icon className="h-3.5 w-3.5" />
           </span>
-          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
+          <h2 className="text-foreground text-sm font-semibold">{title}</h2>
         </div>
         {count !== null && (
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+          <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-medium tabular-nums">
             {count}
           </span>
         )}
@@ -144,24 +146,24 @@ function DueRow({
   item: DueCredential;
   t: ReturnType<typeof useTranslations<'Pulse.priorities'>>;
 }) {
-  const dotClass = item.overdue
-    ? 'bg-red-500'
-    : 'bg-amber-400';
+  const dotClass = item.overdue ? 'bg-red-500' : 'bg-amber-400';
   return (
     <li>
       <Link
         href="/clients"
-        className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+        className="hover:bg-muted/50 flex items-center justify-between gap-3 px-4 py-3 transition-colors"
       >
         <span className="flex min-w-0 items-center gap-2.5">
           <span className={`h-2 w-2 shrink-0 rounded-full ${dotClass}`} />
-          <span className="truncate text-sm font-medium text-foreground">
+          <span className="text-foreground truncate text-sm font-medium">
             {item.contactName}
           </span>
         </span>
         <span
           className={`shrink-0 text-xs tabular-nums ${
-            item.overdue ? 'font-semibold text-red-400' : 'text-muted-foreground'
+            item.overdue
+              ? 'font-semibold text-red-400'
+              : 'text-muted-foreground'
           }`}
         >
           {item.overdue
@@ -186,7 +188,7 @@ function PaymentRow({
     <li>
       <Link
         href="/renewals"
-        className="flex items-center justify-between gap-3 px-4 py-3 transition-colors hover:bg-muted/50"
+        className="hover:bg-muted/50 flex items-center justify-between gap-3 px-4 py-3 transition-colors"
       >
         <span className="flex min-w-0 items-center gap-2.5">
           <Clock3
@@ -194,7 +196,7 @@ function PaymentRow({
               item.overdue ? 'text-red-400' : 'text-muted-foreground'
             }`}
           />
-          <span className="truncate text-sm font-medium text-foreground">
+          <span className="text-foreground truncate text-sm font-medium">
             {item.contactName}
           </span>
           {item.overdue && (
@@ -204,10 +206,10 @@ function PaymentRow({
           )}
         </span>
         <span className="shrink-0 text-right">
-          <span className="block text-sm font-semibold tabular-nums text-foreground">
+          <span className="text-foreground block text-sm font-semibold tabular-nums">
             {formatCurrency(item.amount, currency)}
           </span>
-          <span className="block text-xs tabular-nums text-muted-foreground">
+          <span className="text-muted-foreground block text-xs tabular-nums">
             {t('paymentDue', { date: fmtShortDate(item.dueAt) })}
           </span>
         </span>
@@ -229,21 +231,33 @@ function SkeletonRows({ rows }: { rows: number }) {
   );
 }
 
-function EmptyPanel({ hint, children }: { hint: string; children: React.ReactNode }) {
+function EmptyPanel({
+  hint,
+  children,
+}: {
+  hint: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-center">
-      <p className="text-sm text-muted-foreground">{children}</p>
-      <p className="text-xs text-muted-foreground/70">{hint}</p>
+      <p className="text-muted-foreground text-sm">{children}</p>
+      <p className="text-muted-foreground/70 text-xs">{hint}</p>
     </div>
   );
 }
 
-function PanelFooter({ href, children }: { href: string; children: React.ReactNode }) {
+function PanelFooter({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="border-t border-border px-4 py-2">
+    <div className="border-border border-t px-4 py-2">
       <Link
         href={href}
-        className="text-xs font-medium text-primary hover:text-primary/80"
+        className="text-primary hover:text-primary/80 text-xs font-medium"
       >
         {children}
       </Link>

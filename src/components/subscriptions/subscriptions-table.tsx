@@ -22,6 +22,7 @@ import { MetricCard } from '@/components/dashboard/metric-card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { SkeletonCard } from '@/components/dashboard/skeleton';
+import { formatCurrency } from '@/lib/currency';
 
 type StatusFilter = 'all' | IptvCredentialStatus;
 
@@ -51,29 +52,28 @@ export function SubscriptionsTable() {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<StatusFilter>('all');
 
-  // Cadeia de .then() (não async/await no useEffect): o setState fica nos
-  // callbacks, fora do caminho da regra react-hooks/set-state-in-effect
-  // (mesmo padrão de reports/page.tsx). Nenhum account_id aqui — a RLS
-  // escopa a query ao cliente autenticado.
-  //
-  // Promise.resolve envolve o thenable do supabase para que a cadeia vire um
-  // Promise real (com .catch) — reports/page usa Promise.all, que já é real.
+  const [error, setError] = useState<string | null>(null);
+
   const load = useCallback(() => {
     const db = createClient();
+    setError(null);
     return Promise.resolve(
       db
         .from('iptv_credentials')
         .select(
-          '*, contact:contacts(id, full_name, phone, email), plan:plans(id, name, duration_days), server:servers(id, name)'
+          '*, contact:contacts!iptv_credentials_contact_id_fkey(id, name, phone, email), plan:plans!iptv_credentials_plan_id_fkey(id, name, duration_days, price), server:servers!iptv_credentials_server_id_fkey(id, name)'
         )
         .is('deleted_at', null)
         .order('expires_at', { ascending: false })
     ).then(({ data, error }) => {
-      if (error) console.error('[subscriptions] load:', error.message);
+      if (error) {
+        console.error('[subscriptions] load:', error.message);
+        setError(t('loadError'));
+      }
       setRows((data as SubscriptionRow[]) ?? []);
       setLoading(false);
     });
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     void load().catch((err) =>
@@ -91,7 +91,7 @@ export function SubscriptionsTable() {
         if (filter !== 'all' && r.status !== filter) return false;
         if (q) {
           const haystack = [
-            r.contact?.full_name ?? '',
+            r.contact?.name ?? '',
             r.contact?.phone ?? '',
             r.username,
           ]
@@ -182,6 +182,19 @@ export function SubscriptionsTable() {
         </div>
       </div>
 
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+          <AlertCircle className="size-4 shrink-0" />
+          <span>{error}</span>
+          <button
+            onClick={() => load()}
+            className="text-primary ml-auto cursor-pointer text-xs underline hover:no-underline"
+          >
+            {t('retry')}
+          </button>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="border-border flex flex-col items-center gap-2 rounded-xl border border-dashed px-6 py-12 text-center">
           <Tv className="text-muted-foreground/50 size-8" />
@@ -195,8 +208,9 @@ export function SubscriptionsTable() {
                 <tr className="border-border text-muted-foreground border-b text-left text-xs tracking-wider uppercase">
                   <th className="px-4 py-3 font-medium">{t('colClient')}</th>
                   <th className="px-4 py-3 font-medium">{t('colUsername')}</th>
-                  <th className="px-4 py-3 font-medium">{t('colPlan')}</th>
                   <th className="px-4 py-3 font-medium">{t('colServer')}</th>
+                  <th className="px-4 py-3 font-medium">{t('colPlan')}</th>
+                  <th className="px-4 py-3 font-medium">{t('colPrice')}</th>
                   <th className="px-4 py-3 font-medium">{t('colExpires')}</th>
                   <th className="px-4 py-3 font-medium">{t('colStatus')}</th>
                   <th className="px-4 py-3 font-medium">{t('colNotes')}</th>
@@ -212,7 +226,7 @@ export function SubscriptionsTable() {
                     >
                       <td className="px-4 py-3">
                         <span className="text-foreground block font-medium">
-                          {row.contact?.full_name || t('noName')}
+                          {row.contact?.name || t('noName')}
                         </span>
                         <span className="text-muted-foreground block text-xs">
                           {row.contact?.phone || '—'}
@@ -222,10 +236,15 @@ export function SubscriptionsTable() {
                         {row.username || '—'}
                       </td>
                       <td className="text-muted-foreground px-4 py-3">
-                        {row.plan?.name || '—'}
+                        {row.server?.name || '—'}
                       </td>
                       <td className="text-muted-foreground px-4 py-3">
-                        {row.server?.name || '—'}
+                        {row.plan?.name || '—'}
+                      </td>
+                      <td className="text-muted-foreground px-4 py-3 tabular-nums">
+                        {row.plan?.price != null
+                          ? formatCurrency(row.plan.price)
+                          : '—'}
                       </td>
                       <td
                         className={`px-4 py-3 tabular-nums ${expiryTone(bucket)}`}

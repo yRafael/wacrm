@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
-import { CalendarDays, TrendingDown, TrendingUp, Wallet } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { useAuth } from "@/hooks/use-auth";
-import { formatCurrency } from "@/lib/currency";
-import { MetricCard } from "@/components/dashboard/metric-card";
-import { SkeletonCard } from "@/components/dashboard/skeleton";
-import { BarChart } from "@/components/tremor/bar-chart";
-import { Badge } from "@/components/ui/badge";
+import { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { CalendarDays, TrendingDown, TrendingUp, Wallet } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/use-auth';
+import { formatCurrency } from '@/lib/currency';
+import { MetricCard } from '@/components/dashboard/metric-card';
+import { SkeletonCard } from '@/components/dashboard/skeleton';
+import { BarChart } from '@/components/tremor/bar-chart';
+import { Badge } from '@/components/ui/badge';
 import {
   averageTicket,
   cashBalance,
@@ -20,12 +20,8 @@ import {
   revenueByCategory,
   revenueLastDays,
   totalRevenue,
-} from "@/lib/iptv/finance";
-import type {
-  FinancialTransaction,
-  Payment,
-  Renewal,
-} from "@/types";
+} from '@/lib/iptv/finance';
+import type { FinancialTransaction, Payment, Renewal } from '@/types';
 
 /**
  * Finance overview — the doc Cap. 44 dashboard (saldo, receita hoje/
@@ -37,7 +33,7 @@ import type {
  * component only fetches and renders.
  */
 export function FinanceOverview() {
-  const t = useTranslations("Finance");
+  const t = useTranslations('Finance');
   const { defaultCurrency } = useAuth();
 
   const [txns, setTxns] = useState<FinancialTransaction[]>([]);
@@ -50,14 +46,20 @@ export function FinanceOverview() {
     const load = async () => {
       const db = createClient();
       const [txnRes, payRes, renRes] = await Promise.all([
-        db.from("financial_transactions").select("*").order("occurred_at", { ascending: false }),
-        db.from("payments").select("*"),
-        db.from("renewals").select("*"),
+        db
+          .from('financial_transactions')
+          .select('*')
+          .order('occurred_at', { ascending: false }),
+        db.from('payments').select('*'),
+        db.from('renewals').select('*'),
       ]);
       if (cancelled) return;
-      if (txnRes.error) console.error("[finance] transactions:", txnRes.error.message);
-      if (payRes.error) console.error("[finance] payments:", payRes.error.message);
-      if (renRes.error) console.error("[finance] renewals:", renRes.error.message);
+      if (txnRes.error)
+        console.error('[finance] transactions:', txnRes.error.message);
+      if (payRes.error)
+        console.error('[finance] payments:', payRes.error.message);
+      if (renRes.error)
+        console.error('[finance] renewals:', renRes.error.message);
       setTxns((txnRes.data as FinancialTransaction[]) ?? []);
       setPayments((payRes.data as Payment[]) ?? []);
       setRenewals((renRes.data as Renewal[]) ?? []);
@@ -92,59 +94,65 @@ export function FinanceOverview() {
   const mr = mrr(renewals);
   const ar = arr(renewals);
 
-  const categoryEntries = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+  const categoryEntries = Object.entries(categories).sort(
+    (a, b) => b[1] - a[1]
+  );
   const categoryLabels: Record<string, string> = {
-    sale: t("categorySale"),
-    renewal: t("categoryRenewal"),
-    server: t("categoryServer"),
-    internet: t("categoryInternet"),
-    marketing: t("categoryMarketing"),
-    salary: t("categorySalary"),
-    taxes: t("categoryTaxes"),
-    other: t("categoryOther"),
+    sale: t('categorySale'),
+    renewal: t('categoryRenewal'),
+    server: t('categoryServer'),
+    internet: t('categoryInternet'),
+    marketing: t('categoryMarketing'),
+    salary: t('categorySalary'),
+    taxes: t('categoryTaxes'),
+    other: t('categoryOther'),
   };
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MetricCard
-          title={t("balance")}
+          title={t('balance')}
           value={formatCurrency(bal, defaultCurrency)}
           icon={Wallet}
-          subtitle={t("balanceSub")}
+          subtitle={t('balanceSub')}
         />
         <MetricCard
-          title={t("revenueToday")}
+          title={t('revenueToday')}
           value={formatCurrency(todayRev, defaultCurrency)}
           icon={TrendingUp}
-          subtitle={t("revenueTodaySub")}
+          subtitle={t('revenueTodaySub')}
         />
         <MetricCard
-          title={t("revenue30d")}
+          title={t('revenue30d')}
           value={formatCurrency(last30, defaultCurrency)}
           icon={CalendarDays}
-          subtitle={t("revenue30dSub")}
+          subtitle={t('revenue30dSub')}
         />
         <MetricCard
-          title={t("mrr")}
+          title={t('mrr')}
           value={formatCurrency(mr, defaultCurrency)}
           icon={TrendingUp}
-          subtitle={t("mrrSub", { arr: formatCurrency(ar, defaultCurrency) })}
+          subtitle={t('mrrSub', { arr: formatCurrency(ar, defaultCurrency) })}
         />
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
+        <div className="border-border bg-card rounded-xl border p-5 lg:col-span-2">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">{t("trend")}</h3>
-            <span className="text-xs text-muted-foreground">{t("last6Months")}</span>
+            <h3 className="text-foreground text-sm font-semibold">
+              {t('trend')}
+            </h3>
+            <span className="text-muted-foreground text-xs">
+              {t('last6Months')}
+            </span>
           </div>
           <div className="h-72 w-full">
             <BarChart
               data={monthly}
               index="month"
-              categories={["revenue", "expenses"]}
-              colors={["emerald", "pink"]}
+              categories={['revenue', 'expenses']}
+              colors={['emerald', 'pink']}
               valueFormatter={(v: number) => formatCurrency(v, defaultCurrency)}
               showLegend
             />
@@ -152,16 +160,23 @@ export function FinanceOverview() {
         </div>
 
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-sm font-semibold text-foreground">{t("revenueByCategory")}</h3>
+          <div className="border-border bg-card rounded-xl border p-5">
+            <h3 className="text-foreground mb-3 text-sm font-semibold">
+              {t('revenueByCategory')}
+            </h3>
             {categoryEntries.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t("noData")}</p>
+              <p className="text-muted-foreground text-sm">{t('noData')}</p>
             ) : (
               <ul className="space-y-2">
                 {categoryEntries.map(([cat, value]) => (
-                  <li key={cat} className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">{categoryLabels[cat] ?? cat}</span>
-                    <span className="font-medium tabular-nums text-foreground">
+                  <li
+                    key={cat}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="text-muted-foreground">
+                      {categoryLabels[cat] ?? cat}
+                    </span>
+                    <span className="text-foreground font-medium tabular-nums">
                       {formatCurrency(value, defaultCurrency)}
                     </span>
                   </li>
@@ -170,46 +185,60 @@ export function FinanceOverview() {
             )}
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5">
-            <h3 className="mb-3 text-sm font-semibold text-foreground">{t("health")}</h3>
+          <div className="border-border bg-card rounded-xl border p-5">
+            <h3 className="text-foreground mb-3 text-sm font-semibold">
+              {t('health')}
+            </h3>
             <div className="space-y-3 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t("avgTicket")}</span>
-                <span className="font-medium tabular-nums text-foreground">
+                <span className="text-muted-foreground">{t('avgTicket')}</span>
+                <span className="text-foreground font-medium tabular-nums">
                   {formatCurrency(avgTicket, defaultCurrency)}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">{t("openReceivables")}</span>
-                <span className="font-medium tabular-nums text-foreground">{del.openCount}</span>
+                <span className="text-muted-foreground">
+                  {t('openReceivables')}
+                </span>
+                <span className="text-foreground font-medium tabular-nums">
+                  {del.openCount}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-muted-foreground">
-                  {t("delinquency")}
+                <span className="text-muted-foreground flex items-center gap-1.5">
+                  {t('delinquency')}
                   <Badge
-                    variant={del.rate > 0.3 ? "destructive" : del.rate > 0.1 ? "default" : "outline"}
+                    variant={
+                      del.rate > 0.3
+                        ? 'destructive'
+                        : del.rate > 0.1
+                          ? 'default'
+                          : 'outline'
+                    }
                     className="ml-0"
                   >
                     {Math.round(del.rate * 100)}%
                   </Badge>
                 </span>
-                <span className="font-medium tabular-nums text-foreground">
+                <span className="text-foreground font-medium tabular-nums">
                   {formatCurrency(del.overdueAmount, defaultCurrency)}
                 </span>
               </div>
             </div>
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-5">
+          <div className="border-border bg-card rounded-xl border p-5">
             <div className="flex items-center gap-2">
-              <TrendingDown className="size-4 text-muted-foreground" />
-              <h3 className="text-sm font-semibold text-foreground">{t("arrears")}</h3>
+              <TrendingDown className="text-muted-foreground size-4" />
+              <h3 className="text-foreground text-sm font-semibold">
+                {t('arrears')}
+              </h3>
             </div>
-            <p className="mt-2 text-[28px] font-bold tabular-nums text-foreground">
+            <p className="text-foreground mt-2 text-[28px] font-bold tabular-nums">
               {formatCurrency(del.overdueAmount, defaultCurrency)}
             </p>
-            <p className="text-xs text-muted-foreground">
-              {t("arrearsSub", { count: del.overdueCount })}
+            <p className="text-muted-foreground text-xs">
+              {t('arrearsSub', { count: del.overdueCount })}
             </p>
           </div>
         </div>

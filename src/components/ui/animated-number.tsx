@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 // ============================================================
 // AnimatedNumber — renderiza `value` formatado, animando de 0 até
@@ -6,8 +6,8 @@
 // Formata com pt-BR por padrão; `formatter` permite moeda etc.
 // ============================================================
 
-import { useCountUp } from "@/hooks/use-count-up";
-import { cn } from "@/lib/utils";
+import { useCountUp } from '@/hooks/use-count-up';
+import { cn } from '@/lib/utils';
 
 interface AnimatedNumberProps {
   value: number;
@@ -18,7 +18,7 @@ interface AnimatedNumberProps {
 }
 
 const defaultFormatter = (n: number) =>
-  n.toLocaleString("pt-BR", { maximumFractionDigits: 0 });
+  n.toLocaleString('pt-BR', { maximumFractionDigits: 0 });
 
 export function AnimatedNumber({
   value,
@@ -28,6 +28,6 @@ export function AnimatedNumber({
 }: AnimatedNumberProps) {
   const animated = useCountUp(value, durationMs);
   return (
-    <span className={cn("tabular-nums", className)}>{formatter(animated)}</span>
+    <span className={cn('tabular-nums', className)}>{formatter(animated)}</span>
   );
 }
