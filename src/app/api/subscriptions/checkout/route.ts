@@ -115,9 +115,20 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq('id', existingSub.id);
+    } else {
+      // Create a pending subscription row so the webhook can find it
+      // and update it with the correct plan_id and status.
+      await admin
+        .from('platform_subscriptions')
+        .insert({
+          account_id: caller.accountId,
+          plan_id: plan.id,
+          status: 'TRIAL',
+          payment_provider: 'mercado_pago',
+          provider_subscription_id: result.providerSubscriptionId,
+          started_at: new Date().toISOString(),
+        });
     }
-    // When no existing subscription, don't create a row here with a
-    // fake status — the webhook will create it once payment is confirmed.
 
     // Audit log
     await admin.from('audit_logs').insert({

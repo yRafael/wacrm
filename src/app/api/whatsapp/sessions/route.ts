@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { resolveAccountId } from '@/lib/whatsapp/sessions'
+import { NextResponse } from 'next/server';
+import { requireRole, toErrorResponse } from '@/lib/auth/account';
+import { resolveAccountId } from '@/lib/whatsapp/sessions';
+import { triggerSweep } from '@/lib/whatsapp/sweep-trigger';
 
 /**
  * GET /api/whatsapp/sessions
@@ -8,43 +9,38 @@ import { resolveAccountId } from '@/lib/whatsapp/sessions'
  * Lists the account's WhatsApp sessions (oldest first). Rows carry
  * `status` + `qr_data` (a data URL, rendered by the sessions UI) and
  * update live over Supabase Realtime as the worker changes them.
+ *
+ * Requires at least the 'viewer' role (any user can view WhatsApp sessions in a CRM).
  */
 export async function GET() {
   try {
-    const supabase = await createClient()
+    const ctx = await requireRole('viewer');
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const accountId = await resolveAccountId(supabase, user.id)
+    const accountId = await resolveAccountId(ctx.supabase, ctx.userId);
     if (!accountId) {
       return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
-        { status: 403 },
-      )
+        { status: 403 }
+      );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await ctx.supabase
       .from('whatsapp_sessions')
       .select('*')
       .eq('account_id', accountId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Error listing whatsapp_sessions:', error)
-      return NextResponse.json({ error: 'Failed to list sessions' }, { status: 500 })
+      console.error('Error listing whatsapp_sessions:', error);
+      return NextResponse.json(
+        { error: 'Failed to list sessions' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ sessions: data })
+    return NextResponse.json({ sessions: data });
   } catch (error) {
-    console.error('Error in WhatsApp sessions GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return toErrorResponse(error);
   }
 }
 
@@ -55,35 +51,28 @@ export async function GET() {
  * so the worker connects a socket on its next sweep and the session
  * emits a QR (Baileys pairing) almost immediately — the UI shows the QR
  * once `qr_data` lands via Realtime.
+ *
+ * Requires at least the 'viewer' role (any user can connect WhatsApp in a CRM).
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient()
+    const ctx = await requireRole('viewer');
 
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const accountId = await resolveAccountId(supabase, user.id)
+    const accountId = await resolveAccountId(ctx.supabase, ctx.userId);
     if (!accountId) {
       return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
-        { status: 403 },
-      )
+        { status: 403 }
+      );
     }
 
-    const body = await request.json()
-    const name = typeof body?.name === 'string' ? body.name.trim() : ''
+    const body = await request.json();
+    const name = typeof body?.name === 'string' ? body.name.trim() : '';
     if (!name) {
-      return NextResponse.json({ error: 'name is required' }, { status: 400 })
+      return NextResponse.json({ error: 'name is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await ctx.supabase
       .from('whatsapp_sessions')
       .insert({
         account_id: accountId,
@@ -95,19 +84,24 @@ export async function POST(request: Request) {
         provider: 'baileys',
       })
       .select('*')
-      .single()
+      .single();
 
     if (error || !data) {
-      console.error('Error creating whatsapp_session:', error)
+      console.error('Error creating whatsapp_session:', error);
       return NextResponse.json(
-        { error: `Failed to create session: ${error?.message ?? 'unknown error'}` },
-        { status: 500 },
-      )
+        {
+          error: `Failed to create session: ${error?.message ?? 'unknown error'}`,
+        },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ session: data }, { status: 201 })
+    // Trigger an immediate worker sweep so the new session connects
+    // right away instead of waiting up to 15s for the next sweep.
+    triggerSweep();
+
+    return NextResponse.json({ session: data }, { status: 201 });
   } catch (error) {
-    console.error('Error in WhatsApp sessions POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return toErrorResponse(error);
   }
 }

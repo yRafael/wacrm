@@ -3,8 +3,8 @@
 // POST /api/v1/webhooks — register an endpoint    (scope: webhooks:manage)
 //
 // POST returns the signing `secret` in plaintext exactly once — store
-// it to verify the `X-Wacrm-Signature` on deliveries. wacrm keeps only
-// an encrypted copy and can never show it again.
+// it to verify the `X-Fire-Signature` on deliveries. Fire Workspace
+// keeps only an encrypted copy and can never show it again.
 // ============================================================
 
 import { requireApiKey } from '@/lib/auth/api-context';
@@ -93,7 +93,10 @@ export async function POST(request: Request) {
 
     // Secret shown exactly once.
     return ok(
-      { ...serializeWebhookEndpoint(created as Record<string, unknown>), secret },
+      {
+        ...serializeWebhookEndpoint(created as Record<string, unknown>),
+        secret,
+      },
       201
     );
   } catch (err) {

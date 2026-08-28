@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 
-import { createClient } from '@/lib/supabase/server';
+import { requireRole, toErrorResponse } from '@/lib/auth/account';
 import { resolveAccountId } from '@/lib/whatsapp/sessions';
 import { sanitizePhoneForMeta } from '@/lib/whatsapp/phone-utils';
-import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit';
+import {
+  checkRateLimit,
+  rateLimitResponse,
+  RATE_LIMITS,
+} from '@/lib/rate-limit';
 
 /**
  * POST /api/whatsapp/react
@@ -25,7 +29,15 @@ import { checkRateLimit, rateLimitResponse, RATE_LIMITS } from '@/lib/rate-limit
  */
 export async function POST(request: Request) {
   try {
-    const supabase = await createClient();
+    // Reacting is a write (queues an outbox row + DB mirror) — require
+    // `agent`; viewers are read-only.
+    let ctx;
+    try {
+      ctx = await requireRole('agent');
+    } catch (err) {
+      return toErrorResponse(err);
+    }
+    const supabase = ctx.supabase;
 
     const {
       data: { user },
@@ -45,17 +57,20 @@ export async function POST(request: Request) {
     if (!accountId) {
       return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
-        { status: 403 },
+        { status: 403 }
       );
     }
 
-    const body = (await request.json()) as { message_id?: string; emoji?: string };
+    const body = (await request.json()) as {
+      message_id?: string;
+      emoji?: string;
+    };
     const { message_id, emoji } = body;
 
     if (typeof message_id !== 'string' || typeof emoji !== 'string') {
       return NextResponse.json(
         { error: 'message_id and emoji are required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -74,8 +89,10 @@ export async function POST(request: Request) {
       // No transport-side id yet (usually a still-sending/failed agent
       // message) — WhatsApp can't react to something never delivered.
       return NextResponse.json(
-        { error: 'Cannot react to a message that has not been sent to WhatsApp' },
-        { status: 400 },
+        {
+          error: 'Cannot react to a message that has not been sent to WhatsApp',
+        },
+        { status: 400 }
       );
     }
 
@@ -87,7 +104,10 @@ export async function POST(request: Request) {
       .maybeSingle();
 
     if (convError || !conversation) {
-      return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Conversation not found' },
+        { status: 404 }
+      );
     }
 
     const contact = Array.isArray(conversation.contact)
@@ -96,7 +116,7 @@ export async function POST(request: Request) {
     if (!contact?.phone) {
       return NextResponse.json(
         { error: 'Contact phone number not found' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -113,10 +133,13 @@ export async function POST(request: Request) {
       });
 
     if (enqueueError) {
-      console.error('[whatsapp/react] outbox enqueue failed:', enqueueError.message);
+      console.error(
+        '[whatsapp/react] outbox enqueue failed:',
+        enqueueError.message
+      );
       return NextResponse.json(
         { error: `Failed to queue reaction: ${enqueueError.message}` },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -134,28 +157,33 @@ export async function POST(request: Request) {
         console.error('[whatsapp/react] DB delete failed:', delError.message);
         return NextResponse.json(
           { error: 'Reaction queued but DB delete failed' },
-          { status: 500 },
+          { status: 500 }
         );
       }
     } else {
       // Upsert. The unique constraint (message_id, actor_type, actor_id)
       // lets us swap emoji in a single statement.
-      const { error: upsertError } = await supabase.from('message_reactions').upsert(
-        {
-          message_id: targetMessage.id,
-          conversation_id: targetMessage.conversation_id,
-          actor_type: 'agent',
-          actor_id: user.id,
-          emoji,
-        },
-        { onConflict: 'message_id,actor_type,actor_id' },
-      );
+      const { error: upsertError } = await supabase
+        .from('message_reactions')
+        .upsert(
+          {
+            message_id: targetMessage.id,
+            conversation_id: targetMessage.conversation_id,
+            actor_type: 'agent',
+            actor_id: user.id,
+            emoji,
+          },
+          { onConflict: 'message_id,actor_type,actor_id' }
+        );
 
       if (upsertError) {
-        console.error('[whatsapp/react] DB upsert failed:', upsertError.message);
+        console.error(
+          '[whatsapp/react] DB upsert failed:',
+          upsertError.message
+        );
         return NextResponse.json(
           { error: 'Reaction queued but DB upsert failed' },
-          { status: 500 },
+          { status: 500 }
         );
       }
     }
@@ -165,7 +193,7 @@ export async function POST(request: Request) {
     console.error('Error in WhatsApp react POST:', error);
     return NextResponse.json(
       { error: 'Failed to react to message' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

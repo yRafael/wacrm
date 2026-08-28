@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getCurrentAccount, toErrorResponse } from '@/lib/auth/account';
 import { getBranding } from '@/lib/branding/queries';
-import {
-  BRAND_MIME_BY_TYPE,
-  detectImageType,
-} from '@/lib/branding/assets';
+import { BRAND_MIME_BY_TYPE, detectImageType } from '@/lib/branding/assets';
 
 // ============================================================
 // /api/branding/asset — the ONLY way the browser reads brand assets.

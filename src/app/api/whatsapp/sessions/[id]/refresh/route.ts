@@ -1,6 +1,8 @@
-import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { resolveAccountId, clearSessionAuthDir } from '@/lib/whatsapp/sessions'
+import { NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { resolveAccountId, clearSessionAuthDir } from '@/lib/whatsapp/sessions';
+import { triggerSweep } from '@/lib/whatsapp/sweep-trigger';
 
 /**
  * POST /api/whatsapp/sessions/[id]/refresh
@@ -18,31 +20,34 @@ import { resolveAccountId, clearSessionAuthDir } from '@/lib/whatsapp/sessions'
  */
 export async function POST(
   _request: Request,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params
+    const { id } = await params;
     if (!id) {
-      return NextResponse.json({ error: 'Session id is required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Session id is required' },
+        { status: 400 }
+      );
     }
 
-    const supabase = await createClient()
+    const supabase = await createClient();
 
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const accountId = await resolveAccountId(supabase, user.id)
+    const accountId = await resolveAccountId(supabase, user.id);
     if (!accountId) {
       return NextResponse.json(
         { error: 'Your profile is not linked to an account.' },
-        { status: 403 },
-      )
+        { status: 403 }
+      );
     }
 
     const { data: session, error: fetchError } = await supabase
@@ -50,24 +55,37 @@ export async function POST(
       .select('id, status')
       .eq('id', id)
       .eq('account_id', accountId)
-      .maybeSingle()
+      .maybeSingle();
 
     if (fetchError || !session) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
     if (session.status === 'CONNECTED') {
       return NextResponse.json(
         { error: 'Session is already connected.' },
-        { status: 400 },
-      )
+        { status: 400 }
+      );
     }
 
-    // Logged out — the saved creds are dead. Wipe the auth dir so the
+    // Logged out — the saved creds are dead. Wipe the auth state so the
     // worker's next connect issues a fresh QR instead of replaying the
-    // logged-out state.
+    // logged-out state. Clear both disk (best-effort) and DB-backed creds.
     if (session.status === 'ERROR') {
-      clearSessionAuthDir(accountId, id)
+      clearSessionAuthDir(accountId, id);
+      // Clear DB-backed auth state (production uses database, not disk)
+      // Run deletes in parallel for consistency — if one fails, both
+      // are retried on the next refresh attempt.
+      await Promise.all([
+        supabaseAdmin()
+          .from('whatsapp_session_creds')
+          .delete()
+          .eq('session_id', id),
+        supabaseAdmin()
+          .from('whatsapp_session_keys')
+          .delete()
+          .eq('session_id', id),
+      ]);
     }
 
     const { data: updated, error } = await supabase
@@ -87,16 +105,26 @@ export async function POST(
       .eq('id', id)
       .eq('account_id', accountId)
       .select('id')
-      .maybeSingle()
+      .maybeSingle();
 
     if (error || !updated) {
-      console.error('Error refreshing whatsapp_session:', error)
-      return NextResponse.json({ error: 'Failed to refresh session' }, { status: 500 })
+      console.error('Error refreshing whatsapp_session:', error);
+      return NextResponse.json(
+        { error: 'Failed to refresh session' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true, status: 'CONNECTING' })
+    // Trigger an immediate worker sweep so the session reconnects
+    // right away instead of waiting up to 15s for the next sweep.
+    triggerSweep();
+
+    return NextResponse.json({ success: true, status: 'CONNECTING' });
   } catch (error) {
-    console.error('Error in WhatsApp session refresh POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Error in WhatsApp session refresh POST:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
