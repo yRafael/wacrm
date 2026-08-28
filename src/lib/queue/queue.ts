@@ -14,22 +14,20 @@
 // por `last_message_at` desc (mais recente primeiro).
 // ============================================================
 
-import type { Conversation } from "@/types";
+import type { Conversation } from '@/types';
 
 /** Buckets exibidos na fila de atendimento. */
-export type QueueBucketKey = "unassigned" | "waiting";
+export type QueueBucketKey = 'unassigned' | 'waiting';
 
 /**
  * Classifica uma conversa no bucket da fila (ou `null` se ela não
  * pertence a nenhum — status != 'open'). Unassigned tem prioridade
  * sobre waiting.
  */
-export function classifyConversation(
-  c: Conversation,
-): QueueBucketKey | null {
-  if (c.status !== "open") return null;
-  if (!c.assigned_agent_id) return "unassigned";
-  if (c.unread_count > 0) return "waiting";
+export function classifyConversation(c: Conversation): QueueBucketKey | null {
+  if (c.status !== 'open') return null;
+  if (!c.assigned_agent_id) return 'unassigned';
+  if (c.unread_count > 0) return 'waiting';
   return null;
 }
 
@@ -57,8 +55,8 @@ export function buildQueue(conversations: Conversation[]): QueueBuckets {
   const waiting: Conversation[] = [];
   for (const c of conversations) {
     const bucket = classifyConversation(c);
-    if (bucket === "unassigned") unassigned.push(c);
-    else if (bucket === "waiting") waiting.push(c);
+    if (bucket === 'unassigned') unassigned.push(c);
+    else if (bucket === 'waiting') waiting.push(c);
   }
   return {
     unassigned: unassigned.sort(byMostRecent),

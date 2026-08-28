@@ -25,7 +25,7 @@ import { sessionAuthDir } from '@/lib/whatsapp/baileys/paths';
  * user has no profile/account — callers treat that as forbidden. */
 export async function resolveAccountId(
   supabase: SupabaseClient,
-  userId: string,
+  userId: string
 ): Promise<string | null> {
   const { data, error } = await supabase
     .from('profiles')
@@ -45,13 +45,19 @@ export async function resolveAccountId(
  * have already marked the row DISCONNECTED/removed it so the worker
  * drops the socket first.
  */
-export function clearSessionAuthDir(accountId: string, sessionId: string): void {
+export function clearSessionAuthDir(
+  accountId: string,
+  sessionId: string
+): void {
   try {
-    fs.rmSync(sessionAuthDir(accountId, sessionId), { recursive: true, force: true });
+    fs.rmSync(sessionAuthDir(accountId, sessionId), {
+      recursive: true,
+      force: true,
+    });
   } catch (err) {
     console.error(
       '[whatsapp/sessions] auth-dir cleanup failed:',
-      err instanceof Error ? err.message : err,
+      err instanceof Error ? err.message : err
     );
   }
 }

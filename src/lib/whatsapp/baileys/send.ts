@@ -11,9 +11,13 @@
 // to stream the file through its own memory.
 // ============================================================
 
-import type { WASocket, AnyMessageContent, WAMessage } from '@whiskeysockets/baileys'
+import type {
+  WASocket,
+  AnyMessageContent,
+  WAMessage,
+} from '@whiskeysockets/baileys';
 
-import type { OutboxMessageType, OutboxPayload } from './types'
+import type { OutboxMessageType, OutboxPayload } from './types';
 
 /**
  * WhatsApp LIDs are 15-digit identifiers, not E.164 phone numbers.
@@ -24,12 +28,12 @@ import type { OutboxMessageType, OutboxPayload } from './types'
  * Send to `<digits>@lid` instead — Baileys resolves the recipient's
  * devices via USync at send time (messages-send.js withLIDProtocol).
  */
-const LID_NUMBER_RE = /^\d{15}$/
+const LID_NUMBER_RE = /^\d{15}$/;
 
 export function phoneToJid(phone: string): string {
-  const digits = phone.replace(/\D/g, '')
-  if (LID_NUMBER_RE.test(digits)) return `${digits}@lid`
-  return `${digits}@s.whatsapp.net`
+  const digits = phone.replace(/\D/g, '');
+  if (LID_NUMBER_RE.test(digits)) return `${digits}@lid`;
+  return `${digits}@s.whatsapp.net`;
 }
 
 export interface QuoteInfo {
@@ -60,26 +64,28 @@ export interface SendViaBaileysOptions {
  */
 export async function sendViaBaileys(
   sock: WASocket,
-  options: SendViaBaileysOptions,
+  options: SendViaBaileysOptions
 ): Promise<string> {
-  const { to, messageType, payload, quoted } = options
-  const jid = phoneToJid(to)
-  const content = buildContent(jid, messageType, payload)
-  const extra = quoted ? { quoted: buildQuotedMessage(jid, quoted) } : undefined
+  const { to, messageType, payload, quoted } = options;
+  const jid = phoneToJid(to);
+  const content = buildContent(jid, messageType, payload);
+  const extra = quoted
+    ? { quoted: buildQuotedMessage(jid, quoted) }
+    : undefined;
 
-  const sent = await sock.sendMessage(jid, content, extra)
-  return sent?.key?.id ?? ''
+  const sent = await sock.sendMessage(jid, content, extra);
+  return sent?.key?.id ?? '';
 }
 
 function buildContent(
   jid: string,
   messageType: OutboxMessageType,
-  payload: OutboxPayload | null,
+  payload: OutboxPayload | null
 ): AnyMessageContent {
   switch (messageType) {
     case 'text': {
-      const text = (payload as { text?: string } | null)?.text ?? ''
-      return { text }
+      const text = (payload as { text?: string } | null)?.text ?? '';
+      return { text };
     }
 
     case 'reaction': {

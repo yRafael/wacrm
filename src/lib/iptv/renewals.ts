@@ -20,11 +20,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import type {
-  Payment,
-  PaymentMethod,
-  Renewal,
-} from '@/types';
+import type { Payment, PaymentMethod, Renewal } from '@/types';
 
 /** The renewal durations the UI offers (default = current span). */
 export const RENEWAL_DURATIONS = [30, 90, 180, 365] as const;
@@ -48,7 +44,7 @@ export interface CreatePaymentInput {
 export async function listDuePayments(
   db: SupabaseClient,
   accountId: string,
-  opts: { dueBefore?: string } = {},
+  opts: { dueBefore?: string } = {}
 ): Promise<Payment[]> {
   let query = db
     .from('payments')
@@ -74,7 +70,7 @@ export async function listDuePayments(
 export async function listRecentRenewals(
   db: SupabaseClient,
   accountId: string,
-  limit = 50,
+  limit = 50
 ): Promise<Renewal[]> {
   const { data, error } = await db
     .from('renewals')
@@ -96,7 +92,7 @@ export async function listRecentRenewals(
  */
 export async function createPayment(
   db: SupabaseClient,
-  input: CreatePaymentInput,
+  input: CreatePaymentInput
 ) {
   const { accountId, contactId, amount, method = 'pix', dueAt, notes } = input;
   return db
@@ -128,7 +124,7 @@ export interface CompleteRenewalInput {
  */
 export async function completeRenewal(
   db: SupabaseClient,
-  input: CompleteRenewalInput,
+  input: CompleteRenewalInput
 ): Promise<string> {
   const { error, data } = await db.rpc('complete_renewal', {
     p_payment_id: input.paymentId,
@@ -137,7 +133,10 @@ export async function completeRenewal(
   });
 
   if (error) {
-    throw new Error(error.message, error.code ? { cause: error.code } : undefined);
+    throw new Error(
+      error.message,
+      error.code ? { cause: error.code } : undefined
+    );
   }
   if (typeof data !== 'string') {
     throw new Error('complete_renewal returned no renewal id');

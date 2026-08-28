@@ -17,21 +17,21 @@ export type CsvCell = string | number;
 export function toCsv(headers: string[], rows: CsvCell[][]): string {
   const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
   const line = (cells: CsvCell[]) =>
-    cells.map((c) => escape(String(c))).join(",");
-  return [headers, ...rows].map(line).join("\n");
+    cells.map((c) => escape(String(c))).join(',');
+  return [headers, ...rows].map(line).join('\n');
 }
 
 /** Trigger a browser download of the serialized CSV. */
 export function downloadCsv(
   filename: string,
   headers: string[],
-  rows: CsvCell[][],
+  rows: CsvCell[][]
 ): void {
   const blob = new Blob([toCsv(headers, rows)], {
-    type: "text/csv;charset=utf-8;",
+    type: 'text/csv;charset=utf-8;',
   });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = url;
   a.download = filename;
   document.body.appendChild(a);

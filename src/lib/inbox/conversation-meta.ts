@@ -14,17 +14,14 @@
 
 import type { Conversation, IptvCredential } from '@/types';
 import { classifyConversation, type QueueBucketKey } from '@/lib/queue/queue';
-import {
-  expiryStatus,
-  type ExpiryStatus,
-} from '@/lib/iptv/client-stats';
+import { expiryStatus, type ExpiryStatus } from '@/lib/iptv/client-stats';
 
 /** The two commercial buckets a conversation sits in. */
 export type ConversationKind = 'client' | 'lead';
 
 /** Any current (non-deleted) credential ⇒ the contact has bought. */
 export function conversationKind(
-  credential: IptvCredential | null | undefined,
+  credential: IptvCredential | null | undefined
 ): ConversationKind {
   return credential ? 'client' : 'lead';
 }
@@ -32,7 +29,7 @@ export function conversationKind(
 /** Expiry classification of the contact's current credential. */
 export function conversationExpiry(
   credential: IptvCredential | null | undefined,
-  now: Date,
+  now: Date
 ): ExpiryStatus {
   return expiryStatus(credential?.expires_at ?? null, now);
 }

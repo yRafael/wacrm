@@ -12,14 +12,14 @@
 // the mapping pure (no I/O) and the storage decision in one place.
 // ============================================================
 
-import type { BaileysMessageLike, InboundMessagePayload } from './types'
+import type { BaileysMessageLike, InboundMessagePayload } from './types';
 
 // ------------------------------------------------------------
 // JID helpers
 // ------------------------------------------------------------
 
-const PERSONAL_JID_SUFFIX = '@s.whatsapp.net'
-const LID_SUFFIX = '@lid'
+const PERSONAL_JID_SUFFIX = '@s.whatsapp.net';
+const LID_SUFFIX = '@lid';
 
 /** True when the remote is a personal (1:1) chat we can serve. */
 export function isPersonalChat(jid?: string | null): jid is string {
@@ -133,9 +133,7 @@ function extractReplyToMessageId(msg: BaileysMessageLike): string | null {
   return ci.stanzaId ?? null;
 }
 
-function extractTimestamp(
-  ts?: number | { low: number; high: number },
-): number {
+function extractTimestamp(ts?: number | { low: number; high: number }): number {
   if (typeof ts === 'number') return ts;
   if (ts && typeof ts.low === 'number') return ts.low;
   return Math.floor(Date.now() / 1000);
@@ -157,15 +155,17 @@ function extractLocation(msg: BaileysMessageLike): string | null {
 /**
  * Convert one inbound Baileys message into the normalized payload.
  * Returns null for messages that should be skipped:
- *   - outgoing messages (fromMe),
  *   - group/status/broadcast traffic,
  *   - protocol traffic (revokes, ephemeral settings),
  *   - unsupported payloads.
+ *
+ * Messages sent by the connected account (fromMe) are included so the
+ * worker can persist outbound echoes from WhatsApp Web/App — the caller
+ * marks these with `sender_type: 'agent'`.
  */
 export function normalizeInboundMessage(
-  msg: BaileysMessageLike,
+  msg: BaileysMessageLike
 ): InboundMessagePayload | null {
-  if (msg.key.fromMe) return null;
   if (!isPersonalChat(msg.key.remoteJid)) return null;
 
   const from = extractPhoneFromJid(msg.key.remoteJid);
@@ -182,6 +182,7 @@ export function normalizeInboundMessage(
     from,
     timestamp: extractTimestamp(msg.messageTimestamp),
     pushName: msg.pushName ?? null,
+    fromMe: msg.key.fromMe,
   };
 
   // Reactions are a separate state, not a message.
@@ -210,7 +211,12 @@ export function normalizeInboundMessage(
 
   const text = extractText(msg);
   if (text) {
-    return { ...base, type: 'text', text, replyToMessageId: extractReplyToMessageId(msg) };
+    return {
+      ...base,
+      type: 'text',
+      text,
+      replyToMessageId: extractReplyToMessageId(msg),
+    };
   }
 
   // Sticker / other unsupported → null (skip silently).
@@ -223,7 +229,7 @@ export function normalizeInboundMessage(
 
 /** True when the payload's media bytes still need downloading. */
 export function requiresMediaDownload(
-  message: InboundMessagePayload,
+  message: InboundMessagePayload
 ): message is InboundMessagePayload & { mediaAvailable: true } {
   return (
     (message.type === 'image' ||

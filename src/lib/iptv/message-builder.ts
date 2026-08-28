@@ -49,7 +49,7 @@ const VAR_RE = /\{\{\s*([a-z]+)\s*\}\}/gi;
  * unchanged (formatExpiryDate returns "" for them, so we keep the raw).
  */
 function resolveToken(key: string, value: string): string {
-  if (key === "expiracao") {
+  if (key === 'expiracao') {
     // Already customer-facing DD/MM/YYYY — pass through untouched. (We must
     // check the shape first: "09/08/2026" would otherwise re-parse as
     // MM/DD/YYYY and come back reversed.)
@@ -67,11 +67,11 @@ function resolveToken(key: string, value: string): string {
  */
 export function buildClientMessage(
   template: string,
-  ctx: MessageContext,
+  ctx: MessageContext
 ): string {
   return template.replace(VAR_RE, (match, rawName) => {
     const key = rawName.toLowerCase();
-    if (key === "senha") return match; // never leak the password
+    if (key === 'senha') return match; // never leak the password
     const raw = (ctx as Record<string, string | undefined>)[key];
     if (!raw) return match;
     return resolveToken(key, raw);
@@ -85,8 +85,8 @@ export function buildClientMessage(
  */
 export function formatExpiryDate(expiresAt: string): string {
   const d = new Date(expiresAt);
-  if (Number.isNaN(d.getTime())) return "";
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  if (Number.isNaN(d.getTime())) return '';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
   return `${dd}/${mm}/${d.getFullYear()}`;
 }

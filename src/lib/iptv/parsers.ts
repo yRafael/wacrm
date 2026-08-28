@@ -18,7 +18,7 @@
  * step; encryption happens at the save boundary (`/api/iptv/parser/save`).
  */
 
-export type IptvFieldStatus = "success" | "partial" | "unknown";
+export type IptvFieldStatus = 'success' | 'partial' | 'unknown';
 
 export interface ParsedIptvFields {
   username?: string;
@@ -40,11 +40,11 @@ export interface ParseResult {
   /** Human-readable labels that actually matched (for operator debug). */
   matchedLabels: string[];
   /** Where the credentials came from. */
-  source: "labels" | "url" | "mixed" | "none";
+  source: 'labels' | 'url' | 'mixed' | 'none';
   /** Non-fatal problems worth surfacing, e.g. an unparsable expiry date. */
   errors: string[];
   /** Best-effort panel family hint, purely informational. */
-  panelType: "xtream" | "sigma" | "xui" | "horus" | "generic";
+  panelType: 'xtream' | 'sigma' | 'xui' | 'horus' | 'generic';
 }
 
 // ---------------------------------------------------------------------------
@@ -65,34 +65,34 @@ interface LabelDef {
 
 const LABEL_DEFS: LabelDef[] = [
   // username
-  { field: "username", raw: "usuario" },
-  { field: "username", raw: "username" },
-  { field: "username", raw: "user" },
-  { field: "username", raw: "login" },
-  { field: "username", raw: "utilizador" },
+  { field: 'username', raw: 'usuario' },
+  { field: 'username', raw: 'username' },
+  { field: 'username', raw: 'user' },
+  { field: 'username', raw: 'login' },
+  { field: 'username', raw: 'utilizador' },
   // password
-  { field: "password", raw: "password" },
-  { field: "password", raw: "senha" },
-  { field: "password", raw: "pass" },
-  { field: "password", raw: "clave" },
-  { field: "password", raw: "contrasena" },
+  { field: 'password', raw: 'password' },
+  { field: 'password', raw: 'senha' },
+  { field: 'password', raw: 'pass' },
+  { field: 'password', raw: 'clave' },
+  { field: 'password', raw: 'contrasena' },
   // expiry — most specific first; the sort below re-orders anyway
-  { field: "expiresAt", raw: "assinatura vence dia" },
-  { field: "expiresAt", raw: "valid until" },
-  { field: "expiresAt", raw: "expira dia" },
-  { field: "expiresAt", raw: "expira em" },
-  { field: "expiresAt", raw: "expiration" },
-  { field: "expiresAt", raw: "expiracao" },
-  { field: "expiresAt", raw: "vence dia" },
-  { field: "expiresAt", raw: "vence em" },
-  { field: "expiresAt", raw: "valido ate" },
-  { field: "expiresAt", raw: "valida ate" },
-  { field: "expiresAt", raw: "expires" },
-  { field: "expiresAt", raw: "expiry" },
-  { field: "expiresAt", raw: "validade" },
-  { field: "expiresAt", raw: "expira" },
-  { field: "expiresAt", raw: "vence" },
-  { field: "expiresAt", raw: "ate" },
+  { field: 'expiresAt', raw: 'assinatura vence dia' },
+  { field: 'expiresAt', raw: 'valid until' },
+  { field: 'expiresAt', raw: 'expira dia' },
+  { field: 'expiresAt', raw: 'expira em' },
+  { field: 'expiresAt', raw: 'expiration' },
+  { field: 'expiresAt', raw: 'expiracao' },
+  { field: 'expiresAt', raw: 'vence dia' },
+  { field: 'expiresAt', raw: 'vence em' },
+  { field: 'expiresAt', raw: 'valido ate' },
+  { field: 'expiresAt', raw: 'valida ate' },
+  { field: 'expiresAt', raw: 'expires' },
+  { field: 'expiresAt', raw: 'expiry' },
+  { field: 'expiresAt', raw: 'validade' },
+  { field: 'expiresAt', raw: 'expira' },
+  { field: 'expiresAt', raw: 'vence' },
+  { field: 'expiresAt', raw: 'ate' },
 ];
 // Sort length-descending so the most specific labels ("assinatura vence
 // dia") match before their shorter parents ("vence", "ate"). Sorted in
@@ -104,33 +104,35 @@ LABEL_DEFS.sort((a, b) => b.raw.length - a.raw.length);
 // dictionary entry match every diacritic variant without a full regex per
 // locale.
 const ACCENT_CLASS: Record<string, string> = {
-  a: "aáàâãäAÁÀÂÃÄ",
-  c: "cçCÇ",
-  e: "eéèêëEÉÈÊË",
-  i: "iíìîïIÍÌÎÏ",
-  n: "nñNÑ",
-  o: "oóòôõöOÓÒÔÕÖ",
-  u: "uúùûüUÚÙÛÜ",
+  a: 'aáàâãäAÁÀÂÃÄ',
+  c: 'cçCÇ',
+  e: 'eéèêëEÉÈÊË',
+  i: 'iíìîïIÍÌÎÏ',
+  n: 'nñNÑ',
+  o: 'oóòôõöOÓÒÔÕÖ',
+  u: 'uúùûüUÚÙÛÜ',
 };
 
 /** Accent-insensitive regex source for a (accent-free) label. */
 function labelPattern(raw: string): string {
   return `(?:^|\\s)${raw
-    .split("")
+    .split('')
     .map((ch) => {
       const family = ACCENT_CLASS[ch];
-      return family ? `[${family}]` : ch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return family ? `[${family}]` : ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     })
-    .join("")}\\s*[:=]?\\s*(.+?)\\s*$`;
+    .join('')}\\s*[:=]?\\s*(.+?)\\s*$`;
 }
 
 const COMPILED_LABELS = LABEL_DEFS.map((def) => ({
   def,
-  re: new RegExp(labelPattern(def.raw), "i"),
+  re: new RegExp(labelPattern(def.raw), 'i'),
 }));
 
 /** Which field does this line's label map to, and what is its value? */
-function matchLabel(line: string): { field: IptvField; raw: string; value: string } | null {
+function matchLabel(
+  line: string
+): { field: IptvField; raw: string; value: string } | null {
   for (const { def, re } of COMPILED_LABELS) {
     const m = re.exec(line);
     if (m) {
@@ -144,9 +146,9 @@ function matchLabel(line: string): { field: IptvField; raw: string; value: strin
 /** Strip markdown bold / quotes / trailing punctuation from a value. */
 function cleanValue(raw: string): string {
   let v = raw.trim();
-  v = v.replace(/^[*_]+/, "").replace(/[*_]+$/, "");
-  v = v.replace(/^[`"'“”]+/, "").replace(/[`"'“”]+$/, "");
-  v = v.replace(/[,;:]+$/, "");
+  v = v.replace(/^[*_]+/, '').replace(/[*_]+$/, '');
+  v = v.replace(/^[`"'“”]+/, '').replace(/[`"'“”]+$/, '');
+  v = v.replace(/[,;:]+$/, '');
   return v.trim();
 }
 
@@ -158,18 +160,31 @@ function cleanValue(raw: string): string {
 // ---------------------------------------------------------------------------
 
 const PT_MONTHS: Record<string, number> = {
-  janeiro: 0, jan: 0,
-  fevereiro: 1, fev: 1,
-  marco: 2, mar: 2, março: 2,
-  abril: 3, abr: 3,
-  maio: 4, mai: 4,
-  junho: 5, jun: 5,
-  julho: 6, jul: 6,
-  agosto: 7, ago: 7,
-  setembro: 8, set: 8,
-  outubro: 9, out: 9,
-  novembro: 10, nov: 10,
-  dezembro: 11, dez: 11,
+  janeiro: 0,
+  jan: 0,
+  fevereiro: 1,
+  fev: 1,
+  marco: 2,
+  mar: 2,
+  março: 2,
+  abril: 3,
+  abr: 3,
+  maio: 4,
+  mai: 4,
+  junho: 5,
+  jun: 5,
+  julho: 6,
+  jul: 6,
+  agosto: 7,
+  ago: 7,
+  setembro: 8,
+  set: 8,
+  outubro: 9,
+  out: 9,
+  novembro: 10,
+  nov: 10,
+  dezembro: 11,
+  dez: 11,
 };
 
 const NUMERIC_DATE_RE =
@@ -225,11 +240,15 @@ export function parseDate(value: string): string | null {
   m = TEXT_DATE_RE.exec(value);
   if (m) {
     const day = Number(m[1]);
-    const month = PT_MONTHS[m[2].toLowerCase().replace(/̀/g, "")];
+    const month = PT_MONTHS[m[2].toLowerCase().replace(/̀/g, '')];
     const year = Number(m[3]);
     if (month === undefined || day < 1 || day > 31) return null;
     const dt = new Date(year, month, day, 23, 59, 59);
-    if (dt.getFullYear() !== year || dt.getMonth() !== month || dt.getDate() !== day) {
+    if (
+      dt.getFullYear() !== year ||
+      dt.getMonth() !== month ||
+      dt.getDate() !== day
+    ) {
       return null;
     }
     return `${year}-${pad2(month + 1)}-${pad2(day)}T23:59:59`;
@@ -247,7 +266,10 @@ export function parseDate(value: string): string | null {
 
 const GET_PHP_URL_RE = /[^\s"']*get\.php\?[^\s"']*/gi;
 
-function extractFromUrls(text: string): { username?: string; password?: string } {
+function extractFromUrls(text: string): {
+  username?: string;
+  password?: string;
+} {
   const out: { username?: string; password?: string } = {};
   // `matchAll` clones the regex but inherits its `lastIndex` (spec:
   // RegExp.prototype[@@matchAll] copies it into the clone), so a stale cursor
@@ -255,11 +277,11 @@ function extractFromUrls(text: string): { username?: string; password?: string }
   // skip matches. Reset the cursor to keep this function stateless.
   GET_PHP_URL_RE.lastIndex = 0;
   for (const m of text.matchAll(GET_PHP_URL_RE)) {
-    const qs = m[0].split("?")[1];
+    const qs = m[0].split('?')[1];
     if (!qs) continue;
     const params = new URLSearchParams(qs);
-    const u = params.get("username");
-    const p = params.get("password");
+    const u = params.get('username');
+    const p = params.get('password');
     if (u && p) {
       if (!out.username) out.username = u;
       if (!out.password) out.password = p;
@@ -290,7 +312,7 @@ export function parsePanelText(text: string): ParseResult {
     const hit = matchLabel(line);
     if (!hit) continue;
 
-    if (hit.field === "expiresAt") {
+    if (hit.field === 'expiresAt') {
       const parsed = parseDate(hit.value);
       if (!parsed) {
         errors.push(`Couldn't read the expiry date near "${hit.value}"`);
@@ -323,31 +345,33 @@ export function parsePanelText(text: string): ParseResult {
   const hasPass = Boolean(fields.password);
   const status: IptvFieldStatus =
     hasUser && hasPass
-      ? "success"
+      ? 'success'
       : hasUser || hasPass || fields.expiresAt
-        ? "partial"
-        : "unknown";
+        ? 'partial'
+        : 'unknown';
 
   // `source` reflects where the username/password actually came from.
   // Resolve each field's origin independently so a message whose labels
   // only gave one credential and the URL gave the other is truly "mixed",
   // while a partial label-only message still reads as "labels".
-  const labelUser = labelFields.has("username");
-  const labelPass = labelFields.has("password");
-  const userSrc = labelUser ? "label" : urlUser ? "url" : null;
-  const passSrc = labelPass ? "label" : urlPass ? "url" : null;
-  let source: ParseResult["source"];
-  if (!userSrc && !passSrc) source = "none";
-  else if (userSrc && !passSrc) source = userSrc === "label" ? "labels" : "url";
-  else if (passSrc && !userSrc) source = passSrc === "label" ? "labels" : "url";
-  else source = userSrc === passSrc ? (userSrc === "label" ? "labels" : "url") : "mixed";
+  const labelUser = labelFields.has('username');
+  const labelPass = labelFields.has('password');
+  const userSrc = labelUser ? 'label' : urlUser ? 'url' : null;
+  const passSrc = labelPass ? 'label' : urlPass ? 'url' : null;
+  let source: ParseResult['source'];
+  if (!userSrc && !passSrc) source = 'none';
+  else if (userSrc && !passSrc) source = userSrc === 'label' ? 'labels' : 'url';
+  else if (passSrc && !userSrc) source = passSrc === 'label' ? 'labels' : 'url';
+  else
+    source =
+      userSrc === passSrc ? (userSrc === 'label' ? 'labels' : 'url') : 'mixed';
 
   // Panel family hint — informational only, never used for matching. A fresh
   // non-global literal keeps `.test()` stateless (a `g` regex would advance
   // `lastIndex` and skew the next caller's `matchAll` scan).
   const panelType = /[^\s"']*get\.php\?[^\s"']*/i.test(text)
-    ? "xtream"
-    : "generic";
+    ? 'xtream'
+    : 'generic';
 
   return {
     status,

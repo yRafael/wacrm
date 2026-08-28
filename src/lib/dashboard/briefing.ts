@@ -31,7 +31,7 @@ export function greetingForHour(hour: number): GreetingKey {
  */
 export function mascotExpressionFor(
   pulse: Pick<PulseMetrics, 'atendimentoAguardando'>,
-  weeklyRevenue: number,
+  weeklyRevenue: number
 ): MascotExpression {
   if (pulse.atendimentoAguardando > 0) return 'busy';
   if (weeklyRevenue > 0) return 'happy';
@@ -81,19 +81,31 @@ export interface BriefingInput {
  */
 function pickPhrase(
   pulse: PulseMetrics,
-  weeklyRevenue: number,
+  weeklyRevenue: number
 ): { phraseKey: string; phraseValues: Record<string, number> } {
   if (pulse.atendimentoAguardando > 0) {
-    return { phraseKey: 'phrase.busy', phraseValues: { conversas: pulse.atendimentoAguardando } };
+    return {
+      phraseKey: 'phrase.busy',
+      phraseValues: { conversas: pulse.atendimentoAguardando },
+    };
   }
   if (pulse.renovacoesHoje > 0) {
-    return { phraseKey: 'phrase.renewals', phraseValues: { renewals: pulse.renovacoesHoje } };
+    return {
+      phraseKey: 'phrase.renewals',
+      phraseValues: { renewals: pulse.renovacoesHoje },
+    };
   }
   if (weeklyRevenue > 0) {
-    return { phraseKey: 'phrase.sold', phraseValues: { vendas: weeklyRevenue } };
+    return {
+      phraseKey: 'phrase.sold',
+      phraseValues: { vendas: weeklyRevenue },
+    };
   }
   if (pulse.vencendoHoje > 0) {
-    return { phraseKey: 'phrase.expiring', phraseValues: { vencendo: pulse.vencendoHoje } };
+    return {
+      phraseKey: 'phrase.expiring',
+      phraseValues: { vencendo: pulse.vencendoHoje },
+    };
   }
   return { phraseKey: 'phrase.quiet', phraseValues: {} };
 }

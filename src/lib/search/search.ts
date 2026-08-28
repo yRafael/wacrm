@@ -11,11 +11,7 @@
 
 /** Tipos de resultado que a pesquisa global sabe resolver. */
 export type SearchKind =
-  | 'contact'
-  | 'conversation'
-  | 'payment'
-  | 'credential'
-  | 'renewal';
+  'contact' | 'conversation' | 'payment' | 'credential' | 'renewal';
 
 /** Um resultado individual renderizado na palette. */
 export interface SearchHit {

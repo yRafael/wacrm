@@ -15,11 +15,7 @@ import {
   totalExpenses,
   totalRevenue,
 } from './finance';
-import type {
-  FinancialTransaction,
-  Payment,
-  Renewal,
-} from '@/types';
+import type { FinancialTransaction, Payment, Renewal } from '@/types';
 
 const T = (partial: Partial<FinancialTransaction>): FinancialTransaction => ({
   id: 't1',
@@ -89,7 +85,9 @@ describe('sumByType / totalRevenue / totalExpenses', () => {
       T({ amount: 30, occurred_at: '2026-07-31T23:59:59.999Z' }),
       T({ amount: 40, occurred_at: '2026-08-01T00:00:00.000Z' }),
     ];
-    expect(totalRevenue(txns, { from: '2026-07-01', to: '2026-07-31' })).toBe(60);
+    expect(totalRevenue(txns, { from: '2026-07-01', to: '2026-07-31' })).toBe(
+      60
+    );
   });
 });
 
@@ -130,8 +128,16 @@ describe('mrr / arr', () => {
 
   it('skips renewals outside the range', () => {
     const renewals = [
-      R({ amount: 120, duration_days: 30, created_at: '2026-07-01T00:00:00.000Z' }),
-      R({ amount: 300, duration_days: 30, created_at: '2025-01-01T00:00:00.000Z' }),
+      R({
+        amount: 120,
+        duration_days: 30,
+        created_at: '2026-07-01T00:00:00.000Z',
+      }),
+      R({
+        amount: 300,
+        duration_days: 30,
+        created_at: '2025-01-01T00:00:00.000Z',
+      }),
     ];
     expect(mrr(renewals, { from: '2026-06-01' })).toBe(120);
   });
@@ -197,23 +203,41 @@ describe('revenueByCategory', () => {
 describe('monthlySeries', () => {
   it('zero-fills gaps so the trend is continuous', () => {
     const txns = [
-      T({ type: 'income', amount: 100, occurred_at: '2026-08-05T00:00:00.000Z' }),
-      T({ type: 'expense', amount: 20, occurred_at: '2026-08-05T00:00:00.000Z' }),
+      T({
+        type: 'income',
+        amount: 100,
+        occurred_at: '2026-08-05T00:00:00.000Z',
+      }),
+      T({
+        type: 'expense',
+        amount: 20,
+        occurred_at: '2026-08-05T00:00:00.000Z',
+      }),
     ];
     const series = monthlySeries(txns, NOW, 3);
     expect(series).toHaveLength(3);
-    expect(series[2]).toEqual({ month: '2026-08', revenue: 100, expenses: 20, net: 80 });
-    expect(series[0]).toEqual({ month: '2026-06', revenue: 0, expenses: 0, net: 0 });
+    expect(series[2]).toEqual({
+      month: '2026-08',
+      revenue: 100,
+      expenses: 20,
+      net: 80,
+    });
+    expect(series[0]).toEqual({
+      month: '2026-06',
+      revenue: 0,
+      expenses: 0,
+      net: 0,
+    });
     expect(series[1].month).toBe('2026-07');
   });
 });
 
 describe('simpleProjection', () => {
   it('extrapolates trailing daily average over the horizon', () => {
-    const txns = [
-      T({ amount: 300, occurred_at: '2026-08-08T00:00:00.000Z' }),
-    ];
+    const txns = [T({ amount: 300, occurred_at: '2026-08-08T00:00:00.000Z' })];
     // 300 over 30 lookback days = 10/day → R$300 over 30-day horizon.
-    expect(simpleProjection(txns, NOW, { lookbackDays: 30, horizonDays: 30 })).toBe(300);
+    expect(
+      simpleProjection(txns, NOW, { lookbackDays: 30, horizonDays: 30 })
+    ).toBe(300);
   });
 });

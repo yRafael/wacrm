@@ -86,9 +86,16 @@ export function countSubscriptionBuckets(
 
 export interface SubscriptionContact {
   id: string;
-  full_name: string | null;
+  name: string | null;
   phone: string | null;
   email: string | null;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string | null;
+  duration_days: number | null;
+  price: number | null;
 }
 
 export interface SubscriptionRow {
@@ -100,7 +107,7 @@ export interface SubscriptionRow {
   notes: string | null;
   plan_id: string | null;
   server_id: string | null;
-  plan: Pick<Plan, 'id' | 'name' | 'duration_days'> | null;
+  plan: SubscriptionPlan | null;
   server: Pick<Server, 'id' | 'name'> | null;
   contact: SubscriptionContact | null;
 }

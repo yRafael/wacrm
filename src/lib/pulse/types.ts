@@ -1,8 +1,8 @@
 // ============================================================
-// Fire Pulse — data types
+// Fire Radar — data types
 //
-// Fire Pulse is the operator's "o que está acontecendo?" panel
-// (Dashboard = "Como estamos?" · Pulse = "O que está acontecendo?").
+// Fire Radar is the operator's "o que está acontecendo?" panel
+// (Dashboard = "Como estamos?" · Radar = "O que está acontecendo?").
 // The data layer returns SEMANTIC fields; components compose the
 // translated strings from them, so nothing here leaks a locale.
 // ============================================================
@@ -105,4 +105,16 @@ export interface PulseOperators {
   operators: OperatorLoad[];
   /** Open conversations with no assigned agent. */
   unassigned: { atendimentos: number; pendentes: number };
+}
+
+export interface RadarTimeSeries {
+  date: string;
+  label: string;
+  total: number;
+  active: number;
+}
+
+export interface RadarDistribution {
+  conversations: { status: string; count: number }[];
+  payments: { status: string; count: number }[];
 }

@@ -7,10 +7,10 @@
 // wires it in via the handlers; this module stays pure socket logic
 // so nothing else in the app ever needs Baileys.
 //
-// Auth state is persisted to disk (`useMultiFileAuthState`) under
-//   <WA_SESSION_DIR>/<accountId>/<sessionId>/
-// which is gitignored. A restart re-uses those creds, so the number
-// does NOT need a new QR scan — the socket reconnects on its own.
+// Auth state can be persisted via:
+//   - Database adapter (useDatabaseAuthState) — survives container
+//     restarts / deploys. Default when an adapter is provided.
+//   - Disk (useMultiFileAuthState) — fallback for local dev.
 // ============================================================
 
 import {
@@ -18,18 +18,30 @@ import {
   useMultiFileAuthState,
   fetchLatestBaileysVersion,
   Browsers,
-} from '@whiskeysockets/baileys'
-import type { WASocket, ConnectionState } from '@whiskeysockets/baileys'
-import { toDataURL } from 'qrcode'
+} from '@whiskeysockets/baileys';
+import type {
+  WASocket,
+  ConnectionState,
+  AuthenticationState,
+} from '@whiskeysockets/baileys';
+import { toDataURL } from 'qrcode';
 
-import type { BaileysMessageLike } from './types'
-import { sessionAuthDir } from './paths'
+import type { BaileysMessageLike } from './types';
+import { sessionAuthDir } from './paths';
 
 // Path logic lives in `./paths` (no Baileys import) so a Next.js route
 // can read/clear the auth dir without pulling Baileys into the bundle.
 // The re-export below exposes the helpers to consumers of this module;
 // the import above brings `sessionAuthDir` into local scope for line 89.
 export { WA_SESSION_DIR, sessionAuthDir } from './paths';
+
+/** Custom auth state adapter (e.g. database-backed). */
+export interface AuthAdapter {
+  /** The Baileys auth state (creds + keys). */
+  state: AuthenticationState;
+  /** Persist refreshed creds (called on every creds.update event). */
+  saveCreds: () => Promise<void>;
+}
 
 export interface WaSessionHandlers {
   /** Emitted when Baileys produces a new QR string. */
@@ -38,14 +50,14 @@ export interface WaSessionHandlers {
   onConnectionUpdate: (
     sessionId: string,
     sock: WASocket,
-    update: Partial<ConnectionState>,
+    update: Partial<ConnectionState>
   ) => void;
   /** Emitted for new (or edited) messages from the socket. */
   onUpsert: (
     sessionId: string,
     sock: WASocket,
     messages: BaileysMessageLike[],
-    type: 'notify' | 'append',
+    type: 'notify' | 'append'
   ) => void;
 }
 
@@ -84,20 +96,38 @@ export function unregisterSession(sessionId: string): void {
 
 /**
  * Create + register one socket. Reconnects automatically when creds
- * exist on disk (Baileys handles the retry internally); a fresh number
+ * exist (Baileys handles the retry internally); a fresh number
  * emits a QR through the `connection.update` handler.
+ *
+ * @param authAdapter - Optional pre-built auth state adapter (e.g.
+ *   database-backed). When omitted, falls back to disk-based
+ *   `useMultiFileAuthState` for local dev compatibility.
  */
 export async function connectSession(
   sessionId: string,
   accountId: string,
   handlers: WaSessionHandlers,
+  authAdapter?: AuthAdapter
 ): Promise<WASocket> {
-  const authDir = sessionAuthDir(accountId, sessionId);
-  // `useMultiFileAuthState` is a Baileys helper (loads persisted creds
-  // from disk), not a React hook — the react-hooks rule only fires because
-  // of the "use" prefix.
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { state, saveCreds } = await useMultiFileAuthState(authDir);
+  let state: AuthenticationState;
+  let saveCreds: () => Promise<void>;
+
+  if (authAdapter) {
+    // Database-backed auth state — survives container restarts.
+    state = authAdapter.state;
+    saveCreds = authAdapter.saveCreds;
+  } else {
+    // Fallback: disk-based auth state (local dev only).
+    const authDir = sessionAuthDir(accountId, sessionId);
+    // `useMultiFileAuthState` is a Baileys helper (loads persisted creds
+    // from disk), not a React hook — the react-hooks rule only fires because
+    // of the "use" prefix.
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const diskState = await useMultiFileAuthState(authDir);
+    state = diskState.state;
+    saveCreds = diskState.saveCreds;
+  }
+
   const { version } = await fetchLatestBaileysVersion();
 
   const sock = makeWASocket({
@@ -112,18 +142,27 @@ export async function connectSession(
     // (TypeError reading 'child').
   });
 
-  liveSockets.set(sessionId, { socket: sock, accountId, createdAt: Date.now() });
+  liveSockets.set(sessionId, {
+    socket: sock,
+    accountId,
+    createdAt: Date.now(),
+  });
 
   // Persist the refreshed creds after every auth mutation — this is what
   // makes restarts QR-free.
   sock.ev.on('creds.update', saveCreds);
 
   sock.ev.on('connection.update', (update) =>
-    handlers.onConnectionUpdate(sessionId, sock, update),
+    handlers.onConnectionUpdate(sessionId, sock, update)
   );
 
   sock.ev.on('messages.upsert', ({ messages, type }) =>
-    handlers.onUpsert(sessionId, sock, messages as unknown as BaileysMessageLike[], type),
+    handlers.onUpsert(
+      sessionId,
+      sock,
+      messages as unknown as BaileysMessageLike[],
+      type
+    )
   );
 
   return sock;

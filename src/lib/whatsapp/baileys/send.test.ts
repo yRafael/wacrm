@@ -7,7 +7,9 @@ describe('phoneToJid', () => {
   });
 
   it('strips formatting before building the JID', () => {
-    expect(phoneToJid('+55 (14) 99740-3826')).toBe('5514997403826@s.whatsapp.net');
+    expect(phoneToJid('+55 (14) 99740-3826')).toBe(
+      '5514997403826@s.whatsapp.net'
+    );
   });
 
   it('routes a 15-digit LID to the @lid namespace, not @s.whatsapp.net', () => {

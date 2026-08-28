@@ -22,7 +22,12 @@ export const SESSION_STATUSES = [
 
 export type SessionStatus = (typeof SESSION_STATUSES)[number];
 
-export const OUTBOX_STATUSES = ['pending', 'sending', 'sent', 'failed'] as const;
+export const OUTBOX_STATUSES = [
+  'pending',
+  'sending',
+  'sent',
+  'failed',
+] as const;
 export type OutboxStatus = (typeof OUTBOX_STATUSES)[number];
 
 export const OUTBOX_MESSAGE_TYPES = [
@@ -61,6 +66,10 @@ export interface WhatsAppSessionRow {
    * the live socket.
    */
   refresh_requested_at: string | null;
+  /** Number of disconnects in the last 24h — surfaces flapping. */
+  disconnect_count_24h: number;
+  /** Timestamp of the most recent disconnect event. */
+  last_disconnect_at: string | null;
 }
 
 export interface WhatsAppOutboxRow {
@@ -122,13 +131,7 @@ export type OutboxPayload =
 // ------------------------------------------------------------
 
 export type InboundContentType =
-  | 'text'
-  | 'image'
-  | 'video'
-  | 'audio'
-  | 'document'
-  | 'location'
-  | 'reaction';
+  'text' | 'image' | 'video' | 'audio' | 'document' | 'location' | 'reaction';
 
 export interface InboundMessagePayload {
   /** Baileys message key id (message.key.id). */
@@ -148,6 +151,8 @@ export interface InboundMessagePayload {
   /** Unix seconds. */
   timestamp: number;
   type: InboundContentType;
+  /** True when the message was sent by the connected account (WhatsApp Web/App echo). */
+  fromMe?: boolean;
   /** Nullable — the mapper emits `null` when a media message has no caption. */
   text?: string | null;
   /** Contact display name from the WhatsApp profile (pushName). */
@@ -195,10 +200,24 @@ export interface BaileysMessageLike {
     };
     imageMessage?: { caption?: string; mimetype?: string; url?: string };
     videoMessage?: { caption?: string; mimetype?: string; url?: string };
-    audioMessage?: { mimetype?: string; seconds?: number; url?: string; ptt?: boolean };
-    documentMessage?: { fileName?: string; mimetype?: string; caption?: string; url?: string };
+    audioMessage?: {
+      mimetype?: string;
+      seconds?: number;
+      url?: string;
+      ptt?: boolean;
+    };
+    documentMessage?: {
+      fileName?: string;
+      mimetype?: string;
+      caption?: string;
+      url?: string;
+    };
     stickerMessage?: { mimetype?: string; url?: string };
-    locationMessage?: { degreesLatitude?: number; degreesLongitude?: number; name?: string };
+    locationMessage?: {
+      degreesLatitude?: number;
+      degreesLongitude?: number;
+      name?: string;
+    };
     reactionMessage?: { key?: { id?: string }; text?: string };
     protocolMessage?: { type?: number };
     [key: string]: unknown;

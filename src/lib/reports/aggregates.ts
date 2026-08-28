@@ -28,7 +28,7 @@ export const UNKNOWN_CLIENT = '—';
  */
 export function topClientsByRevenue(
   txns: FinancialTransaction[],
-  limit = 10,
+  limit = 10
 ): ClientRevenue[] {
   const byClient = new Map<string, number>();
   let total = 0;
@@ -47,10 +47,7 @@ export function topClientsByRevenue(
       continue;
     }
     const name = t.contact?.name ?? t.contact?.phone;
-    nameById.set(
-      t.contact_id,
-      name && name.trim() ? name : UNKNOWN_CLIENT,
-    );
+    nameById.set(t.contact_id, name && name.trim() ? name : UNKNOWN_CLIENT);
   }
 
   return [...byClient.entries()]

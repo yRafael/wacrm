@@ -7,7 +7,7 @@
 // só reportamos sucesso/erro.
 // ============================================================
 
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
  * Atribui uma conversa aberta ao operador logado. Retorna `true`
@@ -18,15 +18,15 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export async function claimConversation(
   db: SupabaseClient,
   conversationId: string,
-  userId: string,
+  userId: string
 ): Promise<boolean> {
   const { error } = await db
-    .from("conversations")
+    .from('conversations')
     .update({ assigned_agent_id: userId })
-    .eq("id", conversationId);
+    .eq('id', conversationId);
 
   if (error) {
-    console.error("[queue] claim failed:", {
+    console.error('[queue] claim failed:', {
       message: error.message,
       details: error.details,
       hint: error.hint,

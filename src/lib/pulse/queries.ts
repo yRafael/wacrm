@@ -1,5 +1,5 @@
 // ============================================================
-// Fire Pulse — data layer
+// Fire Radar — data layer
 //
 // Same RLS-scoped pattern as src/lib/dashboard/queries.ts: every call
 // runs through the signed-in user's client, so RLS already scopes
@@ -21,6 +21,7 @@ import type {
   PulseMetrics,
   PulseOperators,
   PulsePriorities,
+  RadarTimeSeries,
 } from './types';
 
 type DB = SupabaseClient;
@@ -459,4 +460,92 @@ export async function loadOperators(db: DB): Promise<PulseOperators> {
   );
 
   return { operators, unassigned };
+}
+
+/**
+ * Time-series data for the line chart: conversations created per day
+ * for the last 7 days, plus the count of conversations that have
+ * at least one message from the customer (active conversations).
+ */
+export async function loadRadarTimeSeries(db: DB): Promise<RadarTimeSeries[]> {
+  const days = 7;
+  const results: RadarTimeSeries[] = [];
+
+  for (let i = days - 1; i >= 0; i--) {
+    const dayStart = startOfLocalDay();
+    dayStart.setDate(dayStart.getDate() - i);
+    const dayEnd = new Date(dayStart);
+    dayEnd.setDate(dayEnd.getDate() + 1);
+
+    const startISO = dayStart.toISOString();
+    const endISO = dayEnd.toISOString();
+
+    const [totalRes, activeRes] = await Promise.all([
+      db
+        .from('conversations')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', startISO)
+        .lt('created_at', endISO),
+      db
+        .from('conversations')
+        .select('id', { count: 'exact', head: true })
+        .gte('created_at', startISO)
+        .lt('created_at', endISO)
+        .gt('unread_count', 0),
+    ]);
+
+    const label = dayStart.toLocaleDateString('pt-BR', { weekday: 'short' });
+
+    results.push({
+      date: dayStart.toISOString().slice(0, 10),
+      label,
+      total: totalRes.count ?? 0,
+      active: activeRes.count ?? 0,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Distribution data for the donut chart: conversation status breakdown
+ * (open, closed) and payment status (paid, pending, overdue).
+ */
+export async function loadRadarDistribution(db: DB): Promise<{
+  conversations: { status: string; count: number }[];
+  payments: { status: string; count: number }[];
+}> {
+  const [convsRes, paymentsRes] = await Promise.all([
+    db
+      .from('conversations')
+      .select('status')
+      .not('status', 'eq', 'archived'),
+    db
+      .from('payments')
+      .select('status')
+      .in('status', ['paid', 'pending', 'late']),
+  ]);
+
+  const convMap = new Map<string, number>();
+  for (const row of convsRes.data ?? []) {
+    const s = (row.status as string) || 'unknown';
+    convMap.set(s, (convMap.get(s) ?? 0) + 1);
+  }
+
+  const payMap = new Map<string, number>();
+  for (const row of paymentsRes.data ?? []) {
+    const s = (row.status as string) || 'unknown';
+    payMap.set(s, (payMap.get(s) ?? 0) + 1);
+  }
+
+  return {
+    conversations: Array.from(convMap.entries()).map(([status, count]) => ({
+      status,
+      count,
+    })),
+    payments: Array.from(payMap.entries()).map(([status, count]) => ({
+      status,
+      count,
+    })),
+  };
 }

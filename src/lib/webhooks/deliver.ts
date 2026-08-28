@@ -115,9 +115,9 @@ async function deliverOne(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Wacrm-Event': event,
-        'X-Wacrm-Webhook-Id': row.id,
-        'X-Wacrm-Signature': buildSignatureHeader(payload, secret, tsSeconds),
+        'X-Fire-Event': event,
+        'X-Fire-Webhook-Id': row.id,
+        'X-Fire-Signature': buildSignatureHeader(payload, secret, tsSeconds),
       },
       body: payload,
       // Do NOT follow redirects — a public URL could 3xx-bounce to an
@@ -142,7 +142,10 @@ async function deliverOne(
   }
 }
 
-async function recordFailure(db: SupabaseClient, row: EndpointRow): Promise<void> {
+async function recordFailure(
+  db: SupabaseClient,
+  row: EndpointRow
+): Promise<void> {
   // Atomic increment (+ auto-disable at the threshold) via a SQL
   // function — a read-modify-write here would lose increments when two
   // deliveries to the same endpoint run concurrently (e.g.
@@ -153,6 +156,10 @@ async function recordFailure(db: SupabaseClient, row: EndpointRow): Promise<void
     max_failures: MAX_CONSECUTIVE_FAILURES,
   });
   if (error) {
-    console.error('[webhooks] record_webhook_failure failed for', row.id, error);
+    console.error(
+      '[webhooks] record_webhook_failure failed for',
+      row.id,
+      error
+    );
   }
 }

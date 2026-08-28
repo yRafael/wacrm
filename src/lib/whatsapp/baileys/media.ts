@@ -9,14 +9,14 @@
 // attachments, so the UI needs no new branches.
 // ============================================================
 
-import { downloadMediaMessage } from '@whiskeysockets/baileys'
-import type { WASocket, WAMessage } from '@whiskeysockets/baileys'
+import { downloadMediaMessage } from '@whiskeysockets/baileys';
+import type { WASocket, WAMessage } from '@whiskeysockets/baileys';
 
-import { supabaseAdmin } from '@/lib/flows/admin-client'
-import { buildMediaPath } from '@/lib/storage/upload-media'
-import type { BaileysMessageLike } from './types'
+import { supabaseAdmin } from '@/lib/supabase/admin';
+import { buildMediaPath } from '@/lib/storage/upload-media';
+import type { BaileysMessageLike } from './types';
 
-const CHAT_MEDIA_BUCKET = 'chat-media'
+const CHAT_MEDIA_BUCKET = 'chat-media';
 
 /** Map a MIME type to a file extension the bucket will accept. */
 function extensionFromMime(mime?: string | null): string {
@@ -66,7 +66,7 @@ export async function downloadAndUploadInboundMedia(
   msg: BaileysMessageLike,
   accountId: string,
   mime?: string | null,
-  filename?: string | null,
+  filename?: string | null
 ): Promise<InboundMediaResult | null> {
   try {
     // `reuploadRequest` lets Baileys re-request the media from the server
@@ -84,11 +84,12 @@ export async function downloadAndUploadInboundMedia(
       {
         logger: sock.logger,
         reuploadRequest: (message) => sock.updateMediaMessage(message),
-      },
+      }
     );
 
     const ext = extensionFromMime(mime);
-    const baseName = filename?.replace(/[^a-zA-Z0-9._-]/g, '_') || `media.${ext}`;
+    const baseName =
+      filename?.replace(/[^a-zA-Z0-9._-]/g, '_') || `media.${ext}`;
     const path = buildMediaPath(accountId, baseName);
 
     const { error: uploadError } = await supabaseAdmin()
@@ -103,14 +104,14 @@ export async function downloadAndUploadInboundMedia(
       console.error(
         '[wa:media] upload failed (MIME allow-listed?):',
         uploadError.message,
-        { mime, filename },
+        { mime, filename }
       );
       return null;
     }
 
-    const { data: { publicUrl } } = supabaseAdmin()
-      .storage.from(CHAT_MEDIA_BUCKET)
-      .getPublicUrl(path);
+    const {
+      data: { publicUrl },
+    } = supabaseAdmin().storage.from(CHAT_MEDIA_BUCKET).getPublicUrl(path);
 
     return { url: publicUrl, mime };
   } catch (err) {

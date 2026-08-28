@@ -21,83 +21,80 @@
 // mid-conversation.
 // ============================================================
 
-import { INTERACTIVE_LIMITS } from './meta-api'
+import { INTERACTIVE_LIMITS } from './meta-api';
 
 export interface InteractiveButton {
   /** Stable id echoed back in the webhook when tapped. */
-  id: string
+  id: string;
   /** Visible label (≤ 20 chars per Meta). */
-  title: string
+  title: string;
 }
 
 export interface InteractiveButtonsPayload {
-  kind: 'buttons'
+  kind: 'buttons';
   /** Body text shown above the buttons (≤ 1024 chars). */
-  body: string
+  body: string;
   /** Optional plain-text header (≤ 60 chars). */
-  header?: string
+  header?: string;
   /** Optional grey footer line (≤ 60 chars). */
-  footer?: string
+  footer?: string;
   /** 1–3 buttons. */
-  buttons: InteractiveButton[]
+  buttons: InteractiveButton[];
 }
 
 export interface InteractiveListRow {
   /** Stable id echoed back in the webhook when selected. */
-  id: string
+  id: string;
   /** Row title (≤ 24 chars per Meta). */
-  title: string
+  title: string;
   /** Optional secondary line (≤ 72 chars). */
-  description?: string
+  description?: string;
 }
 
 export interface InteractiveListSection {
   /** Optional section header shown above its rows. */
-  title?: string
-  rows: InteractiveListRow[]
+  title?: string;
+  rows: InteractiveListRow[];
 }
 
 export interface InteractiveListPayload {
-  kind: 'list'
-  body: string
-  header?: string
-  footer?: string
+  kind: 'list';
+  body: string;
+  header?: string;
+  footer?: string;
   /** Label of the tap-to-expand button on the message bubble (≤ 20 chars). */
-  button_label: string
+  button_label: string;
   /** 1–10 rows TOTAL across all sections. */
-  sections: InteractiveListSection[]
+  sections: InteractiveListSection[];
 }
 
 export type InteractiveMessagePayload =
-  | InteractiveButtonsPayload
-  | InteractiveListPayload
+  InteractiveButtonsPayload | InteractiveListPayload;
 
-export type InteractiveValidation =
-  | { ok: true }
-  | { ok: false; error: string }
+export type InteractiveValidation = { ok: true } | { ok: false; error: string };
 
 function ok(): InteractiveValidation {
-  return { ok: true }
+  return { ok: true };
 }
 function fail(error: string): InteractiveValidation {
-  return { ok: false, error }
+  return { ok: false, error };
 }
 
 function validateHeaderFooter(
   header: string | undefined,
-  footer: string | undefined,
+  footer: string | undefined
 ): InteractiveValidation {
   if (header && header.length > INTERACTIVE_LIMITS.headerTextMaxLength) {
     return fail(
-      `O cabeçalho excede o limite de ${INTERACTIVE_LIMITS.headerTextMaxLength} caracteres.`,
-    )
+      `O cabeçalho excede o limite de ${INTERACTIVE_LIMITS.headerTextMaxLength} caracteres.`
+    );
   }
   if (footer && footer.length > INTERACTIVE_LIMITS.footerMaxLength) {
     return fail(
-      `O rodapé excede o limite de ${INTERACTIVE_LIMITS.footerMaxLength} caracteres.`,
-    )
+      `O rodapé excede o limite de ${INTERACTIVE_LIMITS.footerMaxLength} caracteres.`
+    );
   }
-  return ok()
+  return ok();
 }
 
 /**
@@ -110,98 +107,98 @@ function validateHeaderFooter(
  * request body.
  */
 export function validateInteractivePayload(
-  payload: unknown,
+  payload: unknown
 ): InteractiveValidation {
   if (!payload || typeof payload !== 'object') {
-    return fail('O payload da mensagem interativa é obrigatório.')
+    return fail('O payload da mensagem interativa é obrigatório.');
   }
-  const p = payload as Partial<InteractiveMessagePayload>
+  const p = payload as Partial<InteractiveMessagePayload>;
 
   if (typeof p.body !== 'string' || p.body.trim() === '') {
-    return fail('O texto do corpo da mensagem interativa é obrigatório.')
+    return fail('O texto do corpo da mensagem interativa é obrigatório.');
   }
   if (p.body.length > INTERACTIVE_LIMITS.bodyMaxLength) {
     return fail(
-      `O texto do corpo excede o limite de ${INTERACTIVE_LIMITS.bodyMaxLength} caracteres.`,
-    )
+      `O texto do corpo excede o limite de ${INTERACTIVE_LIMITS.bodyMaxLength} caracteres.`
+    );
   }
-  const hf = validateHeaderFooter(p.header, p.footer)
-  if (!hf.ok) return hf
+  const hf = validateHeaderFooter(p.header, p.footer);
+  if (!hf.ok) return hf;
 
   if (p.kind === 'buttons') {
-    const buttons = (p as InteractiveButtonsPayload).buttons
+    const buttons = (p as InteractiveButtonsPayload).buttons;
     if (!Array.isArray(buttons) || buttons.length < 1) {
-      return fail('Adicione pelo menos um botão de resposta.')
+      return fail('Adicione pelo menos um botão de resposta.');
     }
     if (buttons.length > INTERACTIVE_LIMITS.maxButtons) {
       return fail(
-        `Uma mensagem com botões de resposta permite no máximo ${INTERACTIVE_LIMITS.maxButtons} botões.`,
-      )
+        `Uma mensagem com botões de resposta permite no máximo ${INTERACTIVE_LIMITS.maxButtons} botões.`
+      );
     }
-    const seen = new Set<string>()
+    const seen = new Set<string>();
     for (const b of buttons) {
       if (!b || typeof b.id !== 'string' || b.id.trim() === '') {
-        return fail('Todo botão precisa de um id.')
+        return fail('Todo botão precisa de um id.');
       }
       if (seen.has(b.id)) {
-        return fail(`Id de botão duplicado "${b.id}".`)
+        return fail(`Id de botão duplicado "${b.id}".`);
       }
-      seen.add(b.id)
+      seen.add(b.id);
       if (typeof b.title !== 'string' || b.title.trim() === '') {
-        return fail('Todo botão precisa de um rótulo.')
+        return fail('Todo botão precisa de um rótulo.');
       }
       if (b.title.length > INTERACTIVE_LIMITS.buttonTitleMaxLength) {
         return fail(
-          `O rótulo do botão "${b.title}" excede o limite de ${INTERACTIVE_LIMITS.buttonTitleMaxLength} caracteres.`,
-        )
+          `O rótulo do botão "${b.title}" excede o limite de ${INTERACTIVE_LIMITS.buttonTitleMaxLength} caracteres.`
+        );
       }
     }
-    return ok()
+    return ok();
   }
 
   if (p.kind === 'list') {
-    const list = p as InteractiveListPayload
+    const list = p as InteractiveListPayload;
     if (
       typeof list.button_label !== 'string' ||
       list.button_label.trim() === ''
     ) {
-      return fail('A lista precisa de um rótulo de botão.')
+      return fail('A lista precisa de um rótulo de botão.');
     }
     if (list.button_label.length > INTERACTIVE_LIMITS.buttonTitleMaxLength) {
       return fail(
-        `O rótulo do botão da lista excede o limite de ${INTERACTIVE_LIMITS.buttonTitleMaxLength} caracteres.`,
-      )
+        `O rótulo do botão da lista excede o limite de ${INTERACTIVE_LIMITS.buttonTitleMaxLength} caracteres.`
+      );
     }
     if (!Array.isArray(list.sections) || list.sections.length < 1) {
-      return fail('Adicione pelo menos uma seção de lista.')
+      return fail('Adicione pelo menos uma seção de lista.');
     }
     if (list.sections.length > INTERACTIVE_LIMITS.maxListSections) {
       return fail(
-        `Uma lista permite no máximo ${INTERACTIVE_LIMITS.maxListSections} seções.`,
-      )
+        `Uma lista permite no máximo ${INTERACTIVE_LIMITS.maxListSections} seções.`
+      );
     }
-    const seen = new Set<string>()
-    let total = 0
+    const seen = new Set<string>();
+    let total = 0;
     for (const section of list.sections) {
       if (!section || !Array.isArray(section.rows)) {
-        return fail('Toda seção de lista precisa de linhas.')
+        return fail('Toda seção de lista precisa de linhas.');
       }
       for (const row of section.rows) {
-        total++
+        total++;
         if (!row || typeof row.id !== 'string' || row.id.trim() === '') {
-          return fail('Toda linha de lista precisa de um id.')
+          return fail('Toda linha de lista precisa de um id.');
         }
         if (seen.has(row.id)) {
-          return fail(`Id de linha de lista duplicado "${row.id}".`)
+          return fail(`Id de linha de lista duplicado "${row.id}".`);
         }
-        seen.add(row.id)
+        seen.add(row.id);
         if (typeof row.title !== 'string' || row.title.trim() === '') {
-          return fail('Toda linha de lista precisa de um título.')
+          return fail('Toda linha de lista precisa de um título.');
         }
         if (row.title.length > INTERACTIVE_LIMITS.listRowTitleMaxLength) {
           return fail(
-            `O título da linha de lista "${row.title}" excede o limite de ${INTERACTIVE_LIMITS.listRowTitleMaxLength} caracteres.`,
-          )
+            `O título da linha de lista "${row.title}" excede o limite de ${INTERACTIVE_LIMITS.listRowTitleMaxLength} caracteres.`
+          );
         }
         if (
           row.description &&
@@ -209,21 +206,21 @@ export function validateInteractivePayload(
             INTERACTIVE_LIMITS.listRowDescriptionMaxLength
         ) {
           return fail(
-            `A descrição da linha de lista excede o limite de ${INTERACTIVE_LIMITS.listRowDescriptionMaxLength} caracteres.`,
-          )
+            `A descrição da linha de lista excede o limite de ${INTERACTIVE_LIMITS.listRowDescriptionMaxLength} caracteres.`
+          );
         }
       }
     }
-    if (total < 1) return fail('Adicione pelo menos uma linha de lista.')
+    if (total < 1) return fail('Adicione pelo menos uma linha de lista.');
     if (total > INTERACTIVE_LIMITS.maxListRowsTotal) {
       return fail(
-        `Uma lista permite no máximo ${INTERACTIVE_LIMITS.maxListRowsTotal} linhas no total.`,
-      )
+        `Uma lista permite no máximo ${INTERACTIVE_LIMITS.maxListRowsTotal} linhas no total.`
+      );
     }
-    return ok()
+    return ok();
   }
 
-  return fail('A mensagem interativa deve ser de botões de resposta ou lista.')
+  return fail('A mensagem interativa deve ser de botões de resposta ou lista.');
 }
 
 /**
@@ -231,9 +228,9 @@ export function validateInteractivePayload(
  * and quick-reply list rows — the body, trimmed, or a sensible fallback.
  */
 export function interactivePayloadPreviewText(
-  payload: InteractiveMessagePayload,
+  payload: InteractiveMessagePayload
 ): string {
-  const body = payload.body?.trim()
-  if (body) return body
-  return payload.kind === 'buttons' ? '[botões]' : '[lista]'
+  const body = payload.body?.trim();
+  if (body) return body;
+  return payload.kind === 'buttons' ? '[botões]' : '[lista]';
 }

@@ -205,8 +205,8 @@ export class MercadoPagoProvider implements PaymentProvider {
     };
   }
 
-  async cancelSubscription(providerSubscriptionId: string): Promise<void> {
-    const client = getClient();
+  async cancelSubscription(providerSubscriptionId: string, accountId?: string): Promise<void> {
+    const client = await getClientForAccount(accountId);
     const preApproval = new PreApproval(client);
 
     await preApproval.update({
