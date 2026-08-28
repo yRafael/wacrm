@@ -23,7 +23,7 @@ import type { WASocket, ConnectionState } from '@whiskeysockets/baileys';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
-import { supabaseAdmin } from '@/lib/flows/admin-client';
+import { supabaseAdmin } from '@/lib/supabase/admin';
 import { processInboundMessage } from '@/lib/whatsapp/inbound-process';
 import { clearSessionAuthDir } from '@/lib/whatsapp/sessions';
 import {
@@ -33,7 +33,10 @@ import {
   unregisterSession,
   qrToDataUrl,
   sessionAuthDir,
+  type AuthAdapter,
 } from '@/lib/whatsapp/baileys/session-manager';
+import { useDatabaseAuthState } from '@/lib/whatsapp/baileys/database-auth-state';
+import { consumeSweepTrigger } from '@/lib/whatsapp/sweep-trigger';
 import {
   normalizeInboundMessage,
   requiresMediaDownload,
@@ -87,6 +90,82 @@ const OUTBOX_POLL_MS = 1000;
 const SESSION_SWEEP_MS = 15_000;
 const QR_TTL_MS = 120_000;
 const MAX_SEND_ATTEMPTS = 3;
+
+// ------------------------------------------------------------
+// Reconnection backoff — prevents aggressive reconnection loops
+// ------------------------------------------------------------
+
+/** Maximum number of reconnection attempts before marking session as ERROR. */
+const MAX_RECONNECT_ATTEMPTS = 5;
+
+/**
+ * Backoff intervals in milliseconds. Each failed attempt increments
+ * the index; a successful connection resets to 0.
+ *
+ * Sequence: 5s → 15s → 30s → 1min → 2min (then ERROR)
+ */
+const RECONNECT_BACKOFF_MS = [
+  5_000,    // attempt 1
+  15_000,   // attempt 2
+  30_000,   // attempt 3
+  60_000,   // attempt 4
+  120_000,  // attempt 5 → then ERROR
+];
+
+/** Tracks per-session reconnection state. */
+const reconnectState = new Map<
+  string,
+  { attempts: number; nextAttemptAt: number }
+>();
+
+function getReconnectDelay(attempts: number): number {
+  const idx = Math.min(attempts, RECONNECT_BACKOFF_MS.length - 1);
+  return RECONNECT_BACKOFF_MS[idx];
+}
+
+/** Reset backoff on successful connection. */
+function resetReconnectBackoff(sessionId: string): void {
+  reconnectState.delete(sessionId);
+}
+
+/** Mark session as needing backoff after a failed transient close. */
+function bumpReconnectAttempt(sessionId: string): boolean {
+  const prev = reconnectState.get(sessionId);
+  const attempts = (prev?.attempts ?? 0) + 1;
+  if (attempts > MAX_RECONNECT_ATTEMPTS) return false; // exceeded
+  const delay = getReconnectDelay(attempts);
+  reconnectState.set(sessionId, {
+    attempts,
+    nextAttemptAt: Date.now() + delay,
+  });
+  console.log(
+    `[wa:worker] session ${sessionId} backoff attempt ${attempts}/${MAX_RECONNECT_ATTEMPTS} — next try in ${Math.round(delay / 1000)}s`
+  );
+  return true; // still retrying
+}
+
+/** Drop socket + clear backoff state in one call. */
+function dropSession(sessionId: string): void {
+  unregisterSession(sessionId);
+  reconnectState.delete(sessionId);
+  // Record when the socket was dropped so the sweep can wait for close
+  // events to settle before rebuilding.
+  sessionDropTime.set(sessionId, Date.now());
+}
+
+// Minimum time (ms) to wait after dropping a socket before allowing
+// reconnection. Prevents stale close events from the old socket from
+// hitting the new socket during the rebuild.
+const DRAIN_DELAY_MS = 2000;
+
+/** Tracks when each session was last dropped. */
+const sessionDropTime = new Map<string, number>();
+
+// Lock to prevent concurrent connectSession calls for the same session.
+// If a sweep fires while a previous connect is still in-flight, we skip
+// instead of creating a duplicate socket.
+const connectingLock = new Set<string>();
+
 // A Baileys send that can't complete (degraded request/response channel,
 // dead-but-registered socket) must NOT block the outbox poll forever —
 // after this long the attempt is abandoned and the row retried/failed.
@@ -202,9 +281,148 @@ async function writeSessionStatus(
   }
 }
 
+/**
+ * Track a disconnect event: bump the 24h counter (resetting if the
+ * last disconnect was >24h ago) and stamp last_disconnect_at. This
+ * lets the UI surface "flapping" warnings when a session is unstable.
+ */
+async function trackDisconnect(sessionId: string): Promise<void> {
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+  // Fetch current counter + last disconnect timestamp.
+  const { data: row } = await supabaseAdmin()
+    .from('whatsapp_sessions')
+    .select('disconnect_count_24h, last_disconnect_at')
+    .eq('id', sessionId)
+    .maybeSingle();
+
+  // If the last disconnect was >24h ago, reset the counter.
+  const lastDisco = row?.last_disconnect_at;
+  const count =
+    lastDisco && new Date(lastDisco).getTime() > new Date(cutoff).getTime()
+      ? (row?.disconnect_count_24h ?? 0) + 1
+      : 1;
+
+  await supabaseAdmin()
+    .from('whatsapp_sessions')
+    .update({
+      disconnect_count_24h: count,
+      last_disconnect_at: now.toISOString(),
+    })
+    .eq('id', sessionId);
+
+  if (count >= 5) {
+    console.warn(
+      `[wa:worker] session ${sessionId} flap detected: ${count} disconnects in 24h`
+    );
+  }
+}
+
+/**
+ * Persist a structured connection event to whatsapp_connection_log.
+ * Called on every connect / disconnect so the health page can show
+ * history without tailing stdout.
+ */
+async function logConnectionEvent(
+  sessionId: string,
+  event: 'connected' | 'disconnected' | 'error' | 'reconnect_attempt',
+  extra: { reason?: string; rawError?: string; disconnectCount?: number } = {}
+): Promise<void> {
+  const session = getSession(sessionId);
+  const accountId = session?.accountId;
+  if (!accountId) return;
+
+  await supabaseAdmin()
+    .from('whatsapp_connection_log')
+    .insert({
+      session_id: sessionId,
+      account_id: accountId,
+      event,
+      reason: extra.reason ?? null,
+      raw_error: extra.rawError ?? null,
+      disconnect_count_24h: extra.disconnectCount ?? 0,
+    });
+}
+
+/**
+ * Insert a whatsapp_disconnected notification for the account owner
+ * when a session fails to reconnect (terminal error or max retries).
+ * The notification type is already in the DB CHECK constraint.
+ */
+async function notifySessionDisconnected(
+  sessionId: string,
+  reason: string
+): Promise<void> {
+  const session = getSession(sessionId);
+  const accountId = session?.accountId;
+  if (!accountId) return;
+
+  const { data: account } = await supabaseAdmin()
+    .from('accounts')
+    .select('owner_user_id')
+    .eq('id', accountId)
+    .maybeSingle();
+
+  if (!account?.owner_user_id) return;
+
+  // Fetch session name for a human-readable notification
+  const { data: sessionRow } = await supabaseAdmin()
+    .from('whatsapp_sessions')
+    .select('name')
+    .eq('id', sessionId)
+    .maybeSingle();
+
+  await supabaseAdmin()
+    .from('notifications')
+    .insert({
+      account_id: accountId,
+      user_id: account.owner_user_id,
+      type: 'whatsapp_disconnected',
+      title: 'WhatsApp session disconnected',
+      body: `Session "${sessionRow?.name ?? sessionId}" disconnected (${reason}). Please check and reconnect if needed.`,
+    });
+}
+
 function isLoggedOut(update: Partial<ConnectionState>): boolean {
   const err = update.lastDisconnect?.error as { status?: number } | undefined;
   return Boolean(err && err.status === DisconnectReason.loggedOut);
+}
+
+/**
+ * Map a Baileys DisconnectReason to a user-friendly error key.
+ * The UI translates these keys into locale-specific messages.
+ */
+function disconnectReasonKey(
+  update: Partial<ConnectionState>
+): string {
+  const err = update.lastDisconnect?.error as { status?: number } | undefined;
+  const code = err?.status;
+
+  switch (code) {
+    case DisconnectReason.loggedOut:
+      return 'logged_out';
+    case DisconnectReason.connectionReplaced:
+      return 'connection_replaced';
+    case DisconnectReason.connectionClosed:
+      return 'connection_closed';
+    case DisconnectReason.connectionLost:
+      return 'connection_lost';
+    case DisconnectReason.timedOut:
+      return 'timed_out';
+    case DisconnectReason.restartRequired:
+      return 'restart_required';
+    case DisconnectReason.badSession:
+      return 'bad_session';
+    case DisconnectReason.multideviceMismatch:
+      return 'multidevice_mismatch';
+    case DisconnectReason.forbidden:
+      return 'forbidden';
+    case DisconnectReason.unavailableService:
+      return 'unavailable_service';
+    default:
+      return 'unknown';
+  }
 }
 
 /**
@@ -241,6 +459,10 @@ async function handleConnectionUpdate(
       await writeSessionStatus(sessionId, 'QR_CODE', { qrData: dataUrl });
     } catch (err) {
       console.error('[wa:worker] QR render failed:', err);
+      // Surface the failure so the UI doesn't show "Conectando..." forever
+      await writeSessionStatus(sessionId, 'CONNECTING', {
+        error: 'qr_render_failed',
+      });
     }
     return;
   }
@@ -255,19 +477,62 @@ async function handleConnectionUpdate(
 
     case 'open':
       console.log(`[wa:worker] session ${sessionId} connected`);
-      // Clear any leftover QR — the migration documents qr_data is
-      // cleared on CONNECTED.
-      await writeSessionStatus(sessionId, 'CONNECTED', {
-        connectedAt: new Date().toISOString(),
-        qrData: null,
-      });
+      // Reset backoff on successful connection.
+      resetReconnectBackoff(sessionId);
+      // Clean up drain delay tracking.
+      sessionDropTime.delete(sessionId);
+
+      // Reconciliation: detect gaps in message flow.
+      // If the session was disconnected for a while, messages may have
+      // been missed. We check the last_activity timestamp and log a
+      // warning if the gap exceeds the threshold.
+      {
+        const { data: lastRow } = await supabaseAdmin()
+          .from('whatsapp_sessions')
+          .select('last_activity')
+          .eq('id', sessionId)
+          .maybeSingle();
+
+        const lastAct = lastRow?.last_activity
+          ? new Date(lastRow.last_activity).getTime()
+          : 0;
+        const gapMs = Date.now() - lastAct;
+        const GAP_WARN_MS = 5 * 60 * 1000; // 5 minutes
+
+        if (lastAct > 0 && gapMs > GAP_WARN_MS) {
+          const gapMin = Math.round(gapMs / 60_000);
+          console.warn(
+            `[wa:worker] session ${sessionId} reconnect gap: ${gapMin}min since last activity — possible missed messages`
+          );
+          // Surface the gap to the operator via last_error (informational).
+          await writeSessionStatus(sessionId, 'CONNECTED', {
+            connectedAt: new Date().toISOString(),
+            qrData: null,
+            error: `reconnect_gap_${gapMin}min`,
+          });
+          void logConnectionEvent(sessionId, 'connected', {
+            reason: `reconnect_gap_${gapMin}min`,
+          });
+        } else {
+          // No significant gap — clean reconnect.
+          await writeSessionStatus(sessionId, 'CONNECTED', {
+            connectedAt: new Date().toISOString(),
+            qrData: null,
+          });
+          void logConnectionEvent(sessionId, 'connected');
+        }
+      }
       break;
 
     case 'close': {
+      // Track every disconnect for flapping detection (24h window).
+      void trackDisconnect(sessionId);
+
       // A logged-out session is terminal — Baileys will NOT reconnect.
       // The operator must pair again (the sessions UI exposes this).
       const loggedOut = isLoggedOut(update);
-      const reason =
+      const reasonKey = disconnectReasonKey(update);
+      const rawReason =
         update.lastDisconnect?.error instanceof Error
           ? update.lastDisconnect.error.message
           : loggedOut
@@ -277,15 +542,21 @@ async function handleConnectionUpdate(
       if (loggedOut) {
         console.warn(
           `[wa:worker] session ${sessionId} closed (logged out):`,
-          reason
+          rawReason
         );
         await writeSessionStatus(sessionId, 'ERROR', {
-          error: 'logged_out',
+          error: reasonKey,
           qrData: null,
         });
+        void logConnectionEvent(sessionId, 'error', {
+          reason: reasonKey,
+          rawError: rawReason,
+        });
+        // Notify account owner that the session needs re-pairing
+        void notifySessionDisconnected(sessionId, reasonKey);
         // Dead socket — drop it from the registry so the sweep treats the
         // row as paused until the operator re-pairs ("Atualizar QR").
-        unregisterSession(sessionId);
+        dropSession(sessionId);
         break;
       }
 
@@ -301,51 +572,108 @@ async function handleConnectionUpdate(
         .maybeSingle();
       if (!row?.connected_at) {
         // The number never reached CONNECTED in this lifecycle. Three
-        // sub-cases, decided by what's on disk:
+        // sub-cases, decided by what's in the DB (production uses
+        // database-backed auth, not disk):
         //
-        // 1. creds.json with a paired number (`me`) — the scan COMPLETED:
+        // 1. DB creds with a paired number (`me`) — the scan COMPLETED:
         //    Baileys saved the auth, then the server forces a restart
         //    ("Stream Errored (restart required)", code 515) to switch
         //    from pairing to login mode. This close is that expected
         //    restart. KEEP the creds, drop the socket, and the sweep
         //    rebuilds one that logs straight in — no QR.
         //
-        // 2. creds.json WITHOUT a paired number — a zombie: an earlier
+        // 2. DB creds WITHOUT a paired number — a zombie: an earlier
         //    failed scan wrote generated-but-unregistered creds, so
         //    Baileys believes it is registered and will never emit a QR
         //    (it keeps dying at decodeFrame). Wipe + rebuild for a
         //    clean pairing socket.
         //
         // 3. No creds at all — a normal QR-refresh cycle. Stay QR_CODE.
-        const authDir = sessionAuthDir(session.accountId, sessionId);
-        const credsPath = path.join(authDir, 'creds.json');
-        const hasCreds = fs.existsSync(credsPath);
-        const paired = hasCreds && credsHavePairedNumber(credsPath);
+        const { data: dbCreds } = await supabaseAdmin()
+          .from('whatsapp_session_creds')
+          .select('creds')
+          .eq('session_id', sessionId)
+          .maybeSingle();
+
+        const credsPayload = dbCreds?.creds as Record<string, unknown> | null;
+        const hasCreds = Boolean(credsPayload);
+        const meObj = credsPayload?.me as Record<string, unknown> | undefined;
+        const paired = hasCreds && Boolean(meObj?.id);
+
         if (paired) {
           console.warn(
-            `[wa:worker] session ${sessionId} closed with paired creds — restarting to log in`
+            `[wa:worker] session ${sessionId} closed with paired DB creds — restarting to log in`
           );
           await writeSessionStatus(sessionId, 'CONNECTING', { qrData: null });
-          unregisterSession(sessionId);
+          dropSession(sessionId);
         } else if (hasCreds) {
           console.warn(
-            `[wa:worker] session ${sessionId} closed with unpaired creds — wiping auth dir for fresh pairing`
+            `[wa:worker] session ${sessionId} closed with unpaired DB creds — wiping auth for fresh pairing`
           );
+          // Clear both DB-backed and disk auth state
+          await supabaseAdmin()
+            .from('whatsapp_session_creds')
+            .delete()
+            .eq('session_id', sessionId);
+          await supabaseAdmin()
+            .from('whatsapp_session_keys')
+            .delete()
+            .eq('session_id', sessionId);
           clearSessionAuthDir(session.accountId, sessionId);
-          unregisterSession(sessionId);
+          dropSession(sessionId);
         } else {
           console.warn(
-            `[wa:worker] session ${sessionId} QR cycle closed — next QR coming`
+            `[wa:worker] session ${sessionId} QR cycle closed — dropping dead socket for fresh rebuild`
           );
           await writeSessionStatus(sessionId, 'QR_CODE');
+          dropSession(sessionId);
+        }
+
+        // Apply backoff even for sessions that never connected, so
+        // pairing loops eventually hit ERROR instead of spinning forever.
+        const pairCanRetry = bumpReconnectAttempt(sessionId);
+        if (!pairCanRetry) {
+          console.warn(
+            `[wa:worker] session ${sessionId} exceeded max reconnect attempts during pairing — marking ERROR`
+          );
+          await writeSessionStatus(sessionId, 'ERROR', {
+            error: 'max_reconnect_attempts',
+          });
+          void logConnectionEvent(sessionId, 'error', {
+            reason: 'max_reconnect_attempts',
+          });
+          void notifySessionDisconnected(sessionId, 'max_reconnect_attempts');
+          dropSession(sessionId);
         }
         break;
       }
 
-      console.warn(`[wa:worker] session ${sessionId} closed:`, reason);
-      await writeSessionStatus(sessionId, 'RECONNECTING', {
-        error: String(reason),
-      });
+      console.warn(`[wa:worker] session ${sessionId} closed:`, rawReason);
+      // Apply backoff before allowing reconnection.
+      const canRetry = bumpReconnectAttempt(sessionId);
+      if (canRetry) {
+        await writeSessionStatus(sessionId, 'RECONNECTING', {
+          error: reasonKey,
+        });
+        void logConnectionEvent(sessionId, 'disconnected', {
+          reason: reasonKey,
+          rawError: rawReason,
+        });
+      } else {
+        console.warn(
+          `[wa:worker] session ${sessionId} exceeded max reconnect attempts — marking ERROR`
+        );
+        await writeSessionStatus(sessionId, 'ERROR', {
+          error: 'max_reconnect_attempts',
+        });
+        void logConnectionEvent(sessionId, 'error', {
+          reason: 'max_reconnect_attempts',
+          rawError: rawReason,
+        });
+        // Notify account owner that the session failed to reconnect
+        void notifySessionDisconnected(sessionId, 'max_reconnect_attempts');
+        dropSession(sessionId);
+      }
       break;
     }
   }
@@ -756,7 +1084,7 @@ async function sweepSessions(): Promise<void> {
       console.log(
         `[wa:worker] refresh requested for ${row.id} — rebuilding socket`
       );
-      unregisterSession(row.id);
+      dropSession(row.id);
     } else if (
       // Self-renewing QR: Baileys emits fresh codes while it stays in the
       // pairing loop, but if the socket died (QR-refs exhausted, no
@@ -770,19 +1098,53 @@ async function sweepSessions(): Promise<void> {
       console.log(
         `[wa:worker] QR expired for ${row.id} — rebuilding socket for fresh QR`
       );
-      unregisterSession(row.id);
+      dropSession(row.id);
     }
 
     if (!getSession(row.id)) {
-      await connectSession(row.id, row.account_id, {
-        onQr: () => {}, // QR handled via onConnectionUpdate (update.qr)
-        onConnectionUpdate: handleConnectionUpdate,
-        onUpsert: (sessionId, sock, msgs) =>
-          void handleUpsert(sessionId, sock, msgs),
-      });
-      console.log(
-        `[wa:worker] connected socket for session ${row.id} (${row.name})`
-      );
+      // Respect backoff for RECONNECTING sessions — don't reconnect
+      // until the backoff interval has elapsed.
+      if (row.status === 'RECONNECTING') {
+        const state = reconnectState.get(row.id);
+        if (state && Date.now() < state.nextAttemptAt) {
+          // Not yet — skip this session until the next sweep.
+          continue;
+        }
+      }
+
+      // Wait for close events to settle after a drop.
+      const droppedAt = sessionDropTime.get(row.id) ?? 0;
+      if (Date.now() - droppedAt < DRAIN_DELAY_MS) continue;
+
+      // Skip if already connecting (prevents concurrent connectSession calls).
+      if (connectingLock.has(row.id)) continue;
+      connectingLock.add(row.id);
+
+      try {
+        // Create DB-backed auth adapter for this session.
+        const authAdapter: AuthAdapter = await useDatabaseAuthState(
+          supabaseAdmin(),
+          row.id,
+          row.account_id
+        );
+
+        await connectSession(row.id, row.account_id, {
+          onQr: () => {}, // QR handled via onConnectionUpdate (update.qr)
+          onConnectionUpdate: handleConnectionUpdate,
+          onUpsert: (sessionId, sock, msgs) =>
+            void handleUpsert(sessionId, sock, msgs),
+        }, authAdapter);
+        console.log(
+          `[wa:worker] connected socket for session ${row.id} (${row.name})`
+        );
+      } catch (err) {
+        console.error(`[wa:worker] failed to connect session ${row.id}:`, err);
+        await writeSessionStatus(row.id, 'ERROR', {
+          error: `connect_failed: ${(err as Error).message ?? 'unknown'}`,
+        });
+      } finally {
+        connectingLock.delete(row.id);
+      }
     }
   }
 
@@ -796,7 +1158,7 @@ async function sweepSessions(): Promise<void> {
         `[wa:worker] unregistering session ${sessionId}` +
           (wanted.has(sessionId) ? ' (paused)' : ' (removed)')
       );
-      unregisterSession(sessionId);
+      dropSession(sessionId);
     }
   }
 }
@@ -817,14 +1179,23 @@ async function main(): Promise<void> {
 
   console.log('[wa:worker] starting…');
 
-  // Initial connect + periodic sweep.
+  // Initial connect + periodic sweep. Also check for sweep triggers
+  // (written by the API route when creating/connecting a session) so
+  // new sessions connect immediately instead of waiting up to 15s.
   await sweepSessions();
+  setInterval(() => {
+    // If a trigger file exists, run sweep immediately instead of waiting.
+    if (consumeSweepTrigger()) {
+      console.log('[wa:worker] sweep triggered by API route');
+      void sweepSessions();
+    }
+  }, 1000); // Check every 1s for triggers
   setInterval(() => void sweepSessions(), SESSION_SWEEP_MS);
   setInterval(() => void pollOutbox(), OUTBOX_POLL_MS);
 
   const shutdown = () => {
     console.log('[wa:worker] shutting down…');
-    for (const id of listSessionIds()) unregisterSession(id);
+    for (const id of listSessionIds()) dropSession(id);
     process.exit(0);
   };
   process.on('SIGINT', shutdown);
