@@ -1,0 +1,36 @@
+# fly.toml — Fire Play WhatsApp Worker
+# Deploy: flyctl deploy
+
+app = "fire-wa-worker"
+primary_region = "gru" # São Paulo (latência mínima para BR)
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+
+[mounts]
+  # Persist Baileys auth state across deploys
+  source = "wa_sessions"
+  destination = "/app/wa-sessions"
+
+[[services]]
+  internal_port = 0 # Worker não expõe HTTP
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+[health_check]
+  # Worker não tem HTTP server, desabilitar health check HTTP
+  grace_period = "30s"
+  interval = "60s"
+  method = ""
+  path = ""
+  timeout = "5s"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256
